@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".AddHumorActivity">
+
+    <!-- Título da Tela -->
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Registrar Humor"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Pergunta da Seleção de Humor -->
+    <TextView
+        android:id="@+id/tv_question"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Como você está se sentindo hoje?"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_title" />
+
+    <!-- Grupo 1 de Opções de Humor -->
+    <LinearLayout
+        android:id="@+id/ll_group1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/tv_question">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_calm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Calm"
+            style="@style/MeuBotaoEstilo" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_energetic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Energetic"
+            style="@style/MeuBotaoEstilo" />
+    </LinearLayout>
+
+    <!-- Grupo 2 de Opções de Humor -->
+    <LinearLayout
+        android:id="@+id/ll_group2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/ll_group1">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_sad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Sad"
+            style="@style/MeuBotaoEstilo" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_angry"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Angry"
+            style="@style/MeuBotaoEstilo" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_neutral"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Neutral"
+            style="@style/MeuBotaoEstilo" />
+    </LinearLayout>
+
+    <!-- Seção "Notas do Dia" -->
+    <TextView
+        android:id="@+id/tv_notes_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Notas do dia"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ll_group2" />
+
+    <TextView
+        android:id="@+id/tv_notes_question"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Como foi seu dia? O que te fez sentir assim?"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_notes_title" />
+
+    <EditText
+        android:id="@+id/et_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/edit_text_border"
+        android:gravity="top"
+        android:hint="Descreva seu dia..."
+        android:lines="4"
+        android:padding="8dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_notes_question" />
+
+    <!-- Lembrete Diário -->
+    <LinearLayout
+        android:id="@+id/ll_reminder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/et_notes">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Lembrete diário para registrar humor" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_reminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <!-- Botão "Salvar Registro" -->
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Salvar Registro"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

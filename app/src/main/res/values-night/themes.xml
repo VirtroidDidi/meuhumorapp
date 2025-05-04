@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.AppHumor" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Cores Principais -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/surface</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/surface</item>
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorOnSurface">@color/surface</item>
+        <item name="android:windowBackground">@color/dark_background</item>
+        <item name="colorError">@color/error</item>
+
+        <!-- Componentes de Sistema -->
+        <item name="android:statusBarColor">@color/primary</item>
+        <item name="android:navigationBarColor">@color/primary</item>
+
+        <!-- Mantendo estilos personalizados -->
+        <item name="buttonStyle">@style/MeuBotaoEstilo</item>
+    </style>
+
+    <style name="MeuBotaoEstilo" parent="Widget.Material3.Button.OutlinedButton">
+        <!-- Adicione aqui personalizações adicionais, se necessário -->
+    </style>
+</resources>

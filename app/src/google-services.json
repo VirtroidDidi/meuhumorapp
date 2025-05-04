@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "658707341397",
+    "project_id": "meumood-aa19e",
+    "storage_bucket": "meumood-aa19e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:658707341397:android:f15a7b99f80745dc7cf4dc",
+        "android_client_info": {
+          "package_name": "com.example.apphumor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "658707341397-ptvac5615ranlhqg30bgd2hqvrem4sn8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2qHHou66us7wUwsC8dFm7U0FxoeKhzGw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "658707341397-ptvac5615ranlhqg30bgd2hqvrem4sn8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
