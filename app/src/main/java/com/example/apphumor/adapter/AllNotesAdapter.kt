@@ -12,23 +12,24 @@ import com.example.apphumor.models.HumorNote
 import java.text.SimpleDateFormat
 import java.util.*
 
-class NoteAdapter(
-    private val onEditClicked: (HumorNote) -> Unit
-) : ListAdapter<HumorNote, NoteAdapter.NoteViewHolder>(DiffCallback()) {
+class AllNotesAdapter(
+    private val showEditButton: Boolean = false // Novo parâmetro
+) : ListAdapter<HumorNote, AllNotesAdapter.AllNotesViewHolder>(DiffCallback()) {
 
-    private val TAG = "NoteAdapter"
+    private val TAG = "AllNotesAdapter"
 
-    inner class NoteViewHolder(private val binding: ItemNoteBinding) :
+    inner class AllNotesViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(note: HumorNote) {
             with(binding) {
-                btnEdit.visibility = View.VISIBLE
-                // Configuração dos dados
-                tvHumor.text = note.humor.takeIf { !it.isNullOrEmpty() } ?: "Sem humor registrado"
-                tvDescricao.text = note.descricao.takeIf { !it.isNullOrEmpty() } ?: "Sem descrição"
+                // Controle de visibilidade do botão
+                btnEdit.visibility = if (showEditButton) View.VISIBLE else View.GONE
 
-                // Formatação da data
+                // Restante do código permanece igual
+                tvHumor.text = note.humor ?: "Sem humor"
+                tvDescricao.text = note.descricao ?: "Sem descrição"
+
                 note.data["time"]?.let {
                     try {
                         val timestamp = it as Long
@@ -39,30 +40,23 @@ class NoteAdapter(
                         Log.e(TAG, "Erro de formatação: ${e.message}")
                     }
                 } ?: run {
-                    tvData.text = "Sem timestamp"
-                    Log.w(TAG, "Campo 'time' ausente na nota ${note.id}")
+                    tvData.text = "Sem data"
                 }
-
-
-                btnEdit.setOnClickListener { onEditClicked(note) }
-
             }
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AllNotesViewHolder {
         val binding = ItemNoteBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false
         )
-        return NoteViewHolder(binding)
+        return AllNotesViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
-        val note = getItem(position)
-        Log.d(TAG, "Vinculando nota na posição $position: ${note.id}")
-        holder.bind(note)
+    override fun onBindViewHolder(holder: AllNotesViewHolder, position: Int) {
+        holder.bind(getItem(position))
     }
 
     class DiffCallback : DiffUtil.ItemCallback<HumorNote>() {
