@@ -1,26 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Tema Acolhedor e Moderno (Material 3) -->
     <style name="Theme.AppHumor" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Cores Principais -->
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorOnPrimary">@color/on_surface</item>
-        <item name="colorSecondary">@color/secondary</item>
-        <item name="colorOnSecondary">@color/on_surface</item>
-        <item name="colorSurface">@color/surface</item>
-        <item name="colorOnSurface">@color/on_surface</item>
-        <item name="android:windowBackground">@color/background</item>
-        <item name="colorError">@color/error</item>
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorOnPrimary">@color/on_primary_color</item>
+        <item name="colorSecondary">@color/secondary_color</item>
+        <item name="colorOnSecondary">@color/on_secondary_color</item>
+
+        <!-- Fundo da tela e Superfície dos elementos -->
+        <item name="colorSurface">@color/surface_light</item>
+        <item name="colorOnSurface">@color/black</item>
+        <item name="android:windowBackground">@color/background_light</item>
 
         <!-- Componentes de Sistema -->
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:statusBarColor">@color/primary_color</item>
+        <item name="android:navigationBarColor">@color/surface_light</item>
 
-        <!-- Mantendo estilos personalizados -->
-        <item name="buttonStyle">@style/MeuBotaoEstilo</item>
+        <!-- Estilos de Componentes -->
+        <item name="buttonStyle">@style/AppButton</item>
+        <item name="textInputStyle">@style/AppTextInputLayout</item>
+        <item name="materialButtonOutlinedStyle">@style/AppOutlinedButton</item>
     </style>
 
-    <style name="MeuBotaoEstilo" parent="Widget.Material3.Button.OutlinedButton">
-        <!-- Adicione aqui personalizações adicionais, se necessário -->
+    <!-- Estilo para Botões Principais (com fundo) -->
+    <style name="AppButton" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/on_secondary_color</item>
+        <item name="backgroundTint">@color/secondary_color</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- Estilo para Botões Outline (Contorno) -->
+    <style name="AppOutlinedButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/primary_color</item>
+        <item name="android:textColor">@color/secondary_color</item>
+        <item name="cornerRadius">12dp</item>
+    </style>
+
+    <!-- Estilo para Campos de Texto (EditText/TextInputLayout) -->
+    <style name="AppTextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/primary_color</item>
+        <item name="hintTextColor">@color/secondary_color</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
     </style>
 </resources>

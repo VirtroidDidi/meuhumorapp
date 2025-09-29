@@ -1,106 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
+    android:padding="32dp"
     tools:context=".CadastroActivity">
 
-    <EditText
-        android:id="@+id/edit_cadastro_nome"
-        android:layout_width="0dp"
+    <!-- Título Principal -->
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="100dp"
-        android:hint="Nome Completo"
-        android:inputType="textPersonName"
-        android:minHeight="48dp"
-        android:padding="10dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:text="Crie sua conta"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorPrimary"
+        android:layout_marginTop="32dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <EditText
-        android:id="@+id/edit_cadastro_email"
+    <!-- Campo de Nome -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_nome"
+        style="@style/AppTextInputLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:hint="Nome Completo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_title">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_cadastro_nome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPersonName" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo de E-mail -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_email"
+        style="@style/AppTextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:hint="E-mail"
-        android:inputType="textEmailAddress"
-        android:minHeight="48dp"
-        android:padding="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/edit_cadastro_nome" />
+        app:layout_constraintTop_toBottomOf="@id/til_nome">
 
-    <EditText
-        android:id="@+id/edit_cadastro_senha"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_cadastro_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textEmailAddress" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo de Senha -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_senha"
+        style="@style/AppTextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Senha"
-        android:inputType="textPassword"
-        android:minHeight="48dp"
-        android:padding="10dp"
+        android:hint="Senha (mín. 6 caracteres)"
+        app:endIconMode="password_toggle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/edit_cadastro_email" />
+        app:layout_constraintTop_toBottomOf="@id/til_email">
 
-    <EditText
-        android:id="@+id/edit_cadastro_confirmar_senha"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_cadastro_senha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Campo de Confirmação de Senha -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_confirmar_senha"
+        style="@style/AppTextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Confirme a Senha"
-        android:inputType="textPassword"
-        android:minHeight="48dp"
-        android:padding="10dp"
+        android:hint="Confirmar Senha"
+        app:endIconMode="password_toggle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/edit_cadastro_senha" />
+        app:layout_constraintTop_toBottomOf="@id/til_senha">
 
-    <TextView
-        android:id="@+id/text_selecione_idade"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/edit_cadastro_confirmar_senha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Seleção de Idade -->
+    <LinearLayout
+        android:id="@+id/ll_idade"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Selecione sua Idade:"
-        android:textSize="16sp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="24dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/edit_cadastro_confirmar_senha" />
+        app:layout_constraintTop_toBottomOf="@id/til_confirmar_senha">
 
-    <NumberPicker
-        android:id="@+id/number_picker_idade"
-        android:layout_width="118dp"
-        android:layout_height="61dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/text_selecione_idade" />
+        <TextView
+            android:id="@+id/tv_idade_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sua Idade:"
+            android:textSize="16sp"
+            android:paddingEnd="8dp"
+            android:textColor="?attr/colorOnSurface" />
 
-    <Button
+        <NumberPicker
+            android:id="@+id/number_picker_idade"
+            android:layout_width="wrap_content"
+            android:layout_height="120dp"
+            android:theme="@style/Theme.AppHumor" />
+    </LinearLayout>
+
+    <!-- Botão de Cadastro -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_cadastro"
+        style="@style/AppButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="32dp"
         android:text="Cadastrar"
+        android:paddingVertical="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/number_picker_idade" />
+        app:layout_constraintTop_toBottomOf="@id/ll_idade" />
 
+    <!-- Texto para Login -->
     <TextView
         android:id="@+id/text_login"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Já tem uma conta? Faça Login"
         android:clickable="true"
         android:focusable="true"
-        android:padding="16dp"
+        android:padding="8dp"
+        android:text="Já tenho conta. Fazer login"
         android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorSecondary"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_cadastro" />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

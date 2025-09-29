@@ -13,15 +13,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
     private val fragmentTelaA = FragmentTelaA()
-    private val fragmentTelaB = FragmentTelaB()
+    // REMOVENDO REFERÊNCIA À TELA B (fragmentTelaB) - Deixaremos o desenvolvimento para depois
+    // private val fragmentTelaB = FragmentTelaB()
     private val fragmentTelaC = FragmentTelaC()
     private var activeFragment: Fragment? = null
     private val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        binding = ActivityMainBinding.inflate( layoutInflater )
+        setContentView(binding. root )
 
         auth = FirebaseAuth.getInstance()
 
@@ -35,11 +36,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showInitialFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.fragmentContainerMain, fragmentTelaA, "fragment_a")
-            .add(R.id.fragmentContainerMain, fragmentTelaB, "fragment_b")
-            .add(R.id.fragmentContainerMain, fragmentTelaC, "fragment_c")
-            .hide(fragmentTelaB)
+        supportFragmentManager .beginTransaction()
+            .add(R.id. fragmentContainerMain ,  fragmentTelaA ,  "fragment_a")
+            // REMOVENDO TELA B DO GERENCIADOR DE FRAGMENTS PARA NÃO APARECER
+            // .add(R.id. fragmentContainerMain ,  fragmentTelaB ,  "fragment_b")
+            .add(R.id. fragmentContainerMain ,  fragmentTelaC ,  "fragment_c")
+            // Não precisa mais esconder a Tela B
             .hide(fragmentTelaC)
             .commit()
 
@@ -47,19 +49,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNavigationButtons() {
-        binding.btnHoje.setOnClickListener {
+        binding.btnHoje.setOnClickListener  {
             if (activeFragment != fragmentTelaA) {
                 showFragment(fragmentTelaA)
             }
         }
 
-        binding.btnCalendario.setOnClickListener {
+        // DESABILITANDO O BOTÃO CALENDÁRIO (Tela B) - O botão foi removido do XML
+        // mas é bom deixar o código do listener comentado aqui também por segurança.
+        /*
+        binding.btnCalendario.setOnClickListener  {
             if (activeFragment != fragmentTelaB) {
-                showFragment(fragmentTelaB)
-            }
+               showFragment(fragmentTelaB)
+           }
         }
+        */
 
-        binding.btnHistorico.setOnClickListener {
+        binding.btnHistorico.setOnClickListener  {
             if (activeFragment != fragmentTelaC) {
                 showFragment(fragmentTelaC)
             }
@@ -67,21 +73,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupLogoutButton() {
-        binding.btnLogout.setOnClickListener {
+        binding.btnLogout.setOnClickListener  {
             auth.signOut()
-            startActivity(Intent(this, LoginActivity::class.java))
+            startActivity(Intent(this ,  LoginActivity::class. java ))
             finish()
         }
     }
 
     private fun showFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction().apply {
-            activeFragment?.let { hide(it) }
+        supportFragmentManager .beginTransaction(). apply  {
+            activeFragment?. let  {  hide( it )  }
 
-            if (fragment.isAdded) {
+            if (fragment. isAdded ) {
                 show(fragment)
             } else {
-                add(R.id.fragmentContainerMain, fragment, fragment.tag)
+                add(R.id. fragmentContainerMain ,  fragment ,  fragment. tag )
             }
 
             commit()
