@@ -62,7 +62,7 @@ class DatabaseRepository {
     }
 
     fun getUser(userId: String, callback: (User?) -> Unit) {
-        // Corrigido: usar a referência 'db' em vez de 'usersRef'
+
         db.child(userId).get().addOnSuccessListener { snapshot ->
             val user = snapshot.getValue(User::class.java)
             callback(user)
