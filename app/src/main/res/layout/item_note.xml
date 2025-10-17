@@ -1,55 +1,76 @@
-<androidx.cardview.widget.CardView
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    android:elevation="4dp">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginTop="12dp"
+    app:cardElevation="2dp"
+    app:cardCornerRadius="16dp"
+    app:strokeWidth="0dp"
+    android:background="?attr/colorSurfaceContainer">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- Botão de Editar (Alinhado ao topo e à direita) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEdit"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end">
+            android:minWidth="0dp"
+            android:paddingHorizontal="16dp"
+            android:text="Editar"
+            android:textColor="?attr/colorPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/tvDescricao"/>
 
-            <Button
-                android:id="@+id/btnEdit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Editar"
-                android:backgroundTint="@color/teal_700"
-                android:textColor="@color/white"/>
-
-        </LinearLayout>
-
+        <!-- tvHumor (Título) - Alinhado Verticalmente ao Botão -->
         <TextView
             android:id="@+id/tvHumor"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Humor: Excelente"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="20sp"
             android:textStyle="bold"
-            android:textSize="16sp"
-            android:textColor="@color/black"/>
+            app:layout_constraintEnd_toStartOf="@id/btnEdit"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btnEdit"
+            app:layout_constraintBottom_toBottomOf="@id/btnEdit"/>
 
+        <!-- tvDescricao (Corpo do Texto) - POSICIONAMENTO CORRIGIDO -->
         <TextView
             android:id="@+id/tvDescricao"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@color/black"/>
+            android:text="O dia foi muito produtivo e me senti com muita energia. Esse campo pode ter muito texto."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btnEdit" />
 
+        <!-- tvData (Rodapé) -->
         <TextView
             android:id="@+id/tvData"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:text="Registrado em: 15/10/2025 - 14:30"
+            android:textColor="?attr/colorSecondary"
             android:textSize="12sp"
-            android:textColor="@color/teal_700"/>
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvDescricao" />
 
-    </LinearLayout>
-</androidx.cardview.widget.CardView>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
