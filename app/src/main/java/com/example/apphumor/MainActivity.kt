@@ -3,7 +3,6 @@ package com.example.apphumor
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import com.example.apphumor.databinding.ActivityMainBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -14,11 +13,10 @@ class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
     private val fragmentTelaA = FragmentTelaA()
-    // Habilitando FragmentTelaB (Tela Usuário)
     private val fragmentTelaB = FragmentTelaB()
     private val fragmentTelaC = FragmentTelaC()
     private var activeFragment: Fragment? = null
-    private val TAG = "MainActivity"
+    //private val TAG = "MainActivity"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
