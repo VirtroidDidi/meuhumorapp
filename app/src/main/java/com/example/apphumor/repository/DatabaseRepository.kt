@@ -9,18 +9,18 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 
 class DatabaseRepository {
+    private val db = FirebaseDatabase.getInstance().getReference("users")
+    private val TAG = "DatabaseRepository"
+
     fun updateHumorNote(userId: String, note: HumorNote, onSuccess: () -> Unit, onError: (String) -> Unit) {
         db.child(userId).child("notes").child(note.id!!)
             .setValue(note)
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener {
                 onError(it.message ?: "Erro ao atualizar nota")
-                Log.e(TAG, "Erro ao atualizar: ${it.stackTraceToString()}")
+                Log.e(TAG, "Erro ao atualizar nota: ${it.stackTraceToString()}")
             }
     }
-
-    private val db = FirebaseDatabase.getInstance().getReference("users")
-    private val TAG = "DatabaseRepository"
 
     fun saveHumorNote(
         userId: String,
@@ -33,33 +33,23 @@ class DatabaseRepository {
         noteRef.setValue(note)
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { e ->
-                onError(e.message ?: "Erro ao salvar")
-                Log.e(TAG, "Erro: ${e.stackTraceToString()}")
+                onError(e.message ?: "Erro ao salvar nota")
+                Log.e(TAG, "Erro ao salvar nota: ${e.stackTraceToString()}")
             }
     }
 
     fun getHumorNotes(userId: String, callback: (List<HumorNote>) -> Unit) {
         db.child(userId).child("notes").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val notes = snapshot.children.mapNotNull { dataSnapshot ->
-                    // CORREÇÃO: Mapeamos o objeto e garantimos que o ID da chave
-                    // do Firebase Realtime Database (RTDB) seja usado como o ID do objeto.
-                    val note = dataSnapshot.getValue(HumorNote::class.java)
-                    val noteId = dataSnapshot.key
-
-                    if (note != null && noteId != null) {
-                        note.id = noteId // Atribui a chave do RTDB ao campo 'id' da nota
-                        note // Retorna a nota com o ID corrigido
-                    } else {
-                        Log.w(TAG, "Falha ao desserializar nota em: ${dataSnapshot.key}")
-                        null
-                    }
+                val notes = snapshot.children.mapNotNull {
+                    // Garante que o ID da chave do nó é atribuído ao objeto
+                    it.getValue(HumorNote::class.java)?.copy(id = it.key)
                 }
                 callback(notes)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Erro: ${error.message}")
+                Log.e(TAG, "Erro ao buscar notas: ${error.message}")
                 callback(emptyList())
             }
         })
@@ -73,7 +63,8 @@ class DatabaseRepository {
     }
 
     /**
-     * Atualiza o perfil do usuário no Firebase Realtime Database.
+     * CORREÇÃO CRÍTICA: Atualiza o perfil do usuário no Firebase Realtime Database
+     * usando updateChildren para PRESERVAR a coleção 'notes'.
      * @param user O objeto User com os dados atualizados.
      * @param onSuccess Callback para sucesso.
      * @param onError Callback para erro.
@@ -84,10 +75,19 @@ class DatabaseRepository {
             return
         }
 
-        // Usa o setValue para substituir/atualizar todos os campos
-        db.child(user.uid!!).setValue(user)
+        // Criamos um mapa apenas com os campos que queremos ATUALIZAR.
+        // Isso evita que o setValue apague sub-nós como "notes".
+        val updates = mutableMapOf<String, Any?>()
+        updates["nome"] = user.nome
+        updates["idade"] = user.idade
+        // O email não é atualizado, pois é uma chave de autenticação, mas o colocamos
+        // aqui para garantir que ele esteja no nó principal.
+        updates["email"] = user.email
+
+        // Usa updateChildren para mesclar os novos dados com os existentes.
+        db.child(user.uid!!).updateChildren(updates)
             .addOnSuccessListener {
-                Log.d(TAG, "Usuário ${user.uid} atualizado com sucesso.")
+                Log.d(TAG, "Usuário ${user.uid} atualizado com sucesso (updateChildren).")
                 onSuccess()
             }
             .addOnFailureListener { e ->
@@ -100,6 +100,7 @@ class DatabaseRepository {
     fun getUser(userId: String, callback: (User?) -> Unit) {
 
         db.child(userId).get().addOnSuccessListener { snapshot ->
+            // A desserialização funciona automaticamente com o get()
             val user = snapshot.getValue(User::class.java)
             callback(user)
         }.addOnFailureListener { exception ->

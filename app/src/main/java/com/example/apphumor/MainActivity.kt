@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
     }
 
     /**
-     * Implementação do método da interface FragmentTelaB.LogoutListener.
+     * Implementação do método da interface FragmentTelaB.LogoutLxx istener.
      * Este código é executado quando o usuário clica em "Sair da Conta" no FragmentTelaB.
      */
     override fun onLogoutSuccess() {
