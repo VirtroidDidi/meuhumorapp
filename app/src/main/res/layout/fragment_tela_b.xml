@@ -1,12 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurfaceContainerLow">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Tela B" />
+    <!-- ScrollView para acomodar futuros itens (como o card de insights) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-</FrameLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp">
+
+            <!-- Título da Página -->
+            <TextView
+                android:id="@+id/tv_page_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="24dp"
+                android:text="Jornada de Bem-estar"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface" />
+
+            <!-- Card de Boas-vindas (Exemplo da imagem) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="8dp"
+                android:backgroundTint="@color/teal_700"> <!-- Use uma cor de destaque, como teal_200 ou primary -->
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center_vertical"
+                    android:padding="24dp">
+
+                    <TextView
+                        android:id="@+id/tv_welcome_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bem-vindo(a), Usuário!"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        tools:text="Bem-vindo(a), Sofia!" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Sua jornada de autodescoberta continua."
+                        android:textSize="14sp"
+                        android:textColor="@color/white" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Card de Dados do Usuário (Seus Dados) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:contentPadding="24dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Seus Dados"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="?attr/colorOnSurface"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Item: Nome -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nome:"
+                            android:textStyle="bold"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:layout_marginEnd="8dp"/>
+                        <!-- Alterado para um TextInputEditText para habilitar edição in-place. Inicialmente não editável. -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_user_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="?attr/colorOnSurface"
+                            android:background="@android:color/transparent"
+                            android:enabled="false"
+                            android:focusableInTouchMode="false"
+                            android:focusable="false"
+                            android:inputType="textPersonName"
+                            android:paddingVertical="0dp"
+                            android:minHeight="0dp"
+                            tools:text="Sofia Almeida"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?attr/colorOutline"
+                        android:layout_marginVertical="4dp"/>
+
+                    <!-- Item: E-mail -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="8dp"
+                        android:layout_marginTop="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="E-mail:"
+                            android:textStyle="bold"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:layout_marginEnd="8dp"/>
+                        <!-- Alterado para um TextInputEditText. Não deve ser editável, pois o email é chave de autenticação. -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_user_email"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="?attr/colorOnSurface"
+                            android:background="@android:color/transparent"
+                            android:enabled="false"
+                            android:focusableInTouchMode="false"
+                            android:focusable="false"
+                            android:inputType="textEmailAddress"
+                            android:paddingVertical="0dp"
+                            android:minHeight="0dp"
+                            tools:text="sofia.almeida@example.com"/>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="?attr/colorOutline"
+                        android:layout_marginVertical="4dp"/>
+
+                    <!-- Item: Idade -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Idade:"
+                            android:textStyle="bold"
+                            android:textColor="?android:attr/textColorSecondary"
+                            android:layout_marginEnd="8dp"/>
+                        <!-- Alterado para um TextInputEditText para habilitar edição in-place. Inicialmente não editável. -->
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_user_idade"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="?attr/colorOnSurface"
+                            android:background="@android:color/transparent"
+                            android:enabled="false"
+                            android:focusableInTouchMode="false"
+                            android:focusable="false"
+                            android:inputType="number"
+                            android:paddingVertical="0dp"
+                            android:minHeight="0dp"
+                            tools:text="28"/>
+                    </LinearLayout>
+
+                    <!-- Botão Editar Perfil (será alternado para Salvar) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_edit_profile"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Editar Perfil"
+                        app:icon="@drawable/ic_edit_24" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Botão de Logout (NOVO) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_logout_fragment"
+                style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Sair da Conta"
+                app:icon="@drawable/ic_logout_24"
+                app:iconTint="@color/design_default_color_error"
+                android:textColor="@color/design_default_color_error"
+                app:strokeColor="@color/design_default_color_error" />
+
+            <!-- Espaço para futuros cards (como Insights de Humor) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Futuros Insights de Humor..."
+                android:textAlignment="center"
+                android:textColor="?android:attr/textColorSecondary"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,7 +8,8 @@ import androidx.fragment.app.Fragment
 import com.example.apphumor.databinding.ActivityMainBinding
 import com.google.firebase.auth.FirebaseAuth
 
-class MainActivity : AppCompatActivity() {
+// CORREÇÃO: A classe agora implementa a interface FragmentTelaB.LogoutListener
+class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
@@ -74,8 +75,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // A função setupLogoutButton foi REMOVIDA.
-
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager .beginTransaction(). apply  {
             activeFragment?. let  {  hide( it )  }
@@ -89,5 +88,20 @@ class MainActivity : AppCompatActivity() {
             commit()
         }
         activeFragment = fragment
+    }
+
+    /**
+     * Implementação do método da interface FragmentTelaB.LogoutListener.
+     * Este código é executado quando o usuário clica em "Sair da Conta" no FragmentTelaB.
+     */
+    override fun onLogoutSuccess() {
+        // Redireciona para a tela de Login
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            // Estas flags garantem que o usuário não possa voltar para a MainActivity
+            // após o logout (limpa o histórico de Activities)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish() // Finaliza a MainActivity para que o usuário não possa voltar
     }
 }

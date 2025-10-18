@@ -2,6 +2,7 @@ package com.example.apphumor.models
 
 import android.os.Parcel
 import android.os.Parcelable
+import com.google.firebase.database.Exclude // Importar para exclusão
 
 
 // Classe para representar os dados do usuário
@@ -57,6 +58,8 @@ data class HumorNote(
         }
     }
 
+    // Adiciona a anotação @get:Exclude para garantir que o RTDB ignore esta propriedade calculada
+    @get:Exclude
     val timestamp: Long
         get() = data["time"] as? Long ?: 0L
 }

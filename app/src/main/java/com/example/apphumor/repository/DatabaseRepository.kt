@@ -41,8 +41,19 @@ class DatabaseRepository {
     fun getHumorNotes(userId: String, callback: (List<HumorNote>) -> Unit) {
         db.child(userId).child("notes").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val notes = snapshot.children.mapNotNull {
-                    it.getValue(HumorNote::class.java)?.copy(id = it.key)
+                val notes = snapshot.children.mapNotNull { dataSnapshot ->
+                    // CORREÇÃO: Mapeamos o objeto e garantimos que o ID da chave
+                    // do Firebase Realtime Database (RTDB) seja usado como o ID do objeto.
+                    val note = dataSnapshot.getValue(HumorNote::class.java)
+                    val noteId = dataSnapshot.key
+
+                    if (note != null && noteId != null) {
+                        note.id = noteId // Atribui a chave do RTDB ao campo 'id' da nota
+                        note // Retorna a nota com o ID corrigido
+                    } else {
+                        Log.w(TAG, "Falha ao desserializar nota em: ${dataSnapshot.key}")
+                        null
+                    }
                 }
                 callback(notes)
             }
@@ -58,6 +69,31 @@ class DatabaseRepository {
         db.child(user.uid!!).setValue(user)
             .addOnFailureListener { e ->
                 Log.e(TAG, "Erro ao salvar usuário: ${e.message}")
+            }
+    }
+
+    /**
+     * Atualiza o perfil do usuário no Firebase Realtime Database.
+     * @param user O objeto User com os dados atualizados.
+     * @param onSuccess Callback para sucesso.
+     * @param onError Callback para erro.
+     */
+    fun updateUser(user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (user.uid == null) {
+            onError("ID do usuário é nulo. Não foi possível atualizar.")
+            return
+        }
+
+        // Usa o setValue para substituir/atualizar todos os campos
+        db.child(user.uid!!).setValue(user)
+            .addOnSuccessListener {
+                Log.d(TAG, "Usuário ${user.uid} atualizado com sucesso.")
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                val errorMessage = e.message ?: "Erro desconhecido ao atualizar usuário"
+                onError(errorMessage)
+                Log.e(TAG, "Erro ao atualizar usuário: $errorMessage", e)
             }
     }
 

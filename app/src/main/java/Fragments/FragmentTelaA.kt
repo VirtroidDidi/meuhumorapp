@@ -49,7 +49,7 @@ class FragmentTelaA : Fragment() {
 
         // Configurações iniciais obrigatórias
         setupRecyclerView()
-        setupButton()
+        setupButton() // Agora este método terá a correção
 
         if (isTesting) {
             testAdapter()
@@ -76,12 +76,11 @@ class FragmentTelaA : Fragment() {
     }
 
     private fun setupButton() {
-        // Agora o botão de adicionar está dentro do emptyState (e no XML principal),
-        // mas é melhor ter a lógica de clique aqui, associada à função do Fragment.
-        // Se o botão for aquele FAB na MainActivity, você precisa gerenciar o clique lá.
-        // Assumindo que o FAB está na MainActivity, esta parte não precisa de binding.
-        // No entanto, para fins de demonstração, o botão de 'Adicionar Registro'
-        // no emptyState está sendo configurado.
+        // CORREÇÃO: Implementando o OnClickListener para o botão de adicionar nota no emptyState
+        binding.emptyState.findViewById<View>(R.id.btn_add_record).setOnClickListener {
+            val intent = Intent(requireActivity(), AddHumorActivity::class.java)
+            startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
+        }
     }
 
     private fun testAdapter() {
