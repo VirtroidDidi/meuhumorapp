@@ -13,8 +13,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
     private val fragmentTelaA = FragmentTelaA()
-    // REMOVENDO REFERÊNCIA À TELA B (fragmentTelaB) - Deixaremos o desenvolvimento para depois
-    // private val fragmentTelaB = FragmentTelaB()
+    // Habilitando FragmentTelaB (Tela Usuário)
+    private val fragmentTelaB = FragmentTelaB()
     private val fragmentTelaC = FragmentTelaC()
     private var activeFragment: Fragment? = null
     private val TAG = "MainActivity"
@@ -32,16 +32,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupNavigationButtons()
-        setupLogoutButton()
+        // O botão de Logout foi removido do XML, então a função setupLogoutButton() foi removida.
     }
 
     private fun showInitialFragment() {
         supportFragmentManager .beginTransaction()
+            // Adiciona a Tela A (Hoje)
             .add(R.id. fragmentContainerMain ,  fragmentTelaA ,  "fragment_a")
-            // REMOVENDO TELA B DO GERENCIADOR DE FRAGMENTS PARA NÃO APARECER
-            // .add(R.id. fragmentContainerMain ,  fragmentTelaB ,  "fragment_b")
+            // Adiciona a Tela B (Usuário)
+            .add(R.id. fragmentContainerMain ,  fragmentTelaB ,  "fragment_b")
+            // Adiciona a Tela C (Histórico)
             .add(R.id. fragmentContainerMain ,  fragmentTelaC ,  "fragment_c")
-            // Não precisa mais esconder a Tela B
+            // Esconde as telas B e C, deixando A como ativa
+            .hide(fragmentTelaB)
             .hide(fragmentTelaC)
             .commit()
 
@@ -49,22 +52,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNavigationButtons() {
+        // Botão HOJE (FragmentTelaA)
         binding.btnHoje.setOnClickListener  {
             if (activeFragment != fragmentTelaA) {
                 showFragment(fragmentTelaA)
             }
         }
 
-        // DESABILITANDO O BOTÃO CALENDÁRIO (Tela B) - O botão foi removido do XML
-        // mas é bom deixar o código do listener comentado aqui também por segurança.
-        /*
-        binding.btnCalendario.setOnClickListener  {
+        // NOVO: Botão USUÁRIO (FragmentTelaB)
+        binding.btnUsuario.setOnClickListener  {
             if (activeFragment != fragmentTelaB) {
-               showFragment(fragmentTelaB)
-           }
+                showFragment(fragmentTelaB)
+            }
         }
-        */
 
+        // Botão HISTÓRICO (FragmentTelaC)
         binding.btnHistorico.setOnClickListener  {
             if (activeFragment != fragmentTelaC) {
                 showFragment(fragmentTelaC)
@@ -72,13 +74,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupLogoutButton() {
-        binding.btnLogout.setOnClickListener  {
-            auth.signOut()
-            startActivity(Intent(this ,  LoginActivity::class. java ))
-            finish()
-        }
-    }
+    // A função setupLogoutButton foi REMOVIDA.
 
     private fun showFragment(fragment: Fragment) {
         supportFragmentManager .beginTransaction(). apply  {

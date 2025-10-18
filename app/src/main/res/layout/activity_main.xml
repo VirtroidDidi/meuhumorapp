@@ -9,7 +9,7 @@
     android:background="?attr/colorSurfaceContainerLow"
     tools:context=".MainActivity">
 
-    <!-- 1. AppBar com Título e Botão de Logout (Topo da Hierarquia) -->
+    <!-- 1. AppBar com Título (O botão 'Sair' foi removido) -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
@@ -36,17 +36,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
 
-            <!-- O ID btn_logout é mantido para a funcionalidade de Sair -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_logout"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sair"
-                android:textColor="?attr/colorOnPrimary"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
+            <!-- O Botão 'Sair' (btn_logout) foi REMOVIDO conforme solicitado. -->
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -61,7 +51,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/appBarLayout" />
 
-    <!-- 3. BARRA DE NAVEGAÇÃO (Fundo da Hierarquia, mas visualmente elevado) -->
+    <!-- 3. BARRA DE NAVEGAÇÃO INFERIOR: Hoje, Histórico e Usuário -->
     <LinearLayout
         android:id="@+id/bottomNav"
         android:layout_width="0dp"
@@ -75,7 +65,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Botão HOJE -->
+        <!-- Botão HOJE (FragmentTelaA) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_hoje"
             style="@style/Widget.Material3.Button.TextButton.Icon"
@@ -89,7 +79,7 @@
             android:checkable="true"
             android:checked="true" />
 
-        <!-- Botão HISTÓRICO -->
+        <!-- Botão HISTÓRICO (FragmentTelaC) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_historico"
             style="@style/Widget.Material3.Button.TextButton.Icon"
@@ -98,6 +88,20 @@
             android:layout_weight="1"
             android:text="Histórico"
             app:icon="@drawable/ic_historico_24"
+            android:textColor="@color/bottom_nav_selector"
+            app:iconTint="@color/bottom_nav_selector"
+            android:checkable="true"
+            android:checked="false" />
+
+        <!-- NOVO Botão USUÁRIO (FragmentTelaB) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_usuario"
+            style="@style/Widget.Material3.Button.TextButton.Icon"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Usuário"
+            app:icon="@drawable/ic_usuario_24"
             android:textColor="@color/bottom_nav_selector"
             app:iconTint="@color/bottom_nav_selector"
             android:checkable="true"
