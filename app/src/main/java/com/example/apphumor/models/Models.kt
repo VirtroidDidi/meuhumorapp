@@ -5,6 +5,8 @@ import android.os.Parcelable
 import com.google.firebase.database.Exclude // Importar para exclusão
 
 
+
+
 // Classe para representar os dados do usuário
 data class User(
     var uid: String? = null,

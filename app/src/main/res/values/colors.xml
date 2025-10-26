@@ -29,4 +29,12 @@
     <color name="dark_surface">#FF2A2A2A</color>
     <color name="on_dark_surface">#FFF9F4EF</color>
 
+
+    <color name="insight_calm_bg">#4CAF50</color>
+    <color name="insight_energetic_bg">#FFC107</color>
+    <color name="insight_sad_bg">#2196F3</color>
+    <color name="insight_neutral_bg">#9E9E9E</color>
+    <color name="insight_angry_bg">#F44336</color>
+
+
 </resources>
