@@ -227,7 +227,7 @@ class FragmentTelaA : Fragment() {
         val descriptionText = when {
             isReset -> "Sequência Reiniciada. Comece hoje!" // Feedback de Quebra
             sequence >= maxDays -> "Parabéns! Sequência semanal completa!" // Feedback de Sucesso (sem emoji)
-            sequence > 0 -> " dias consecutivos!" // Feedback de Sequência (sem emoji)
+            sequence > 0 -> "Sequência de $sequence dias consecutivos!" // Feedback de Sequência (sem emoji)
             else -> "Sua sequência diária de notas." // Estado inicial (0 registros)
         }
 
