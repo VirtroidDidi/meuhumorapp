@@ -20,6 +20,7 @@ import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.google.firebase.auth.FirebaseAuth
 import java.util.*
 import java.util.concurrent.TimeUnit // Importação para facilitar a conversão de tempo
+import kotlin.math.abs
 
 class FragmentTelaA : Fragment() {
     private lateinit var binding: FragmentTelaABinding
@@ -33,6 +34,12 @@ class FragmentTelaA : Fragment() {
 
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1001
+    }
+
+    // Função utilitária para converter timestamp para a unidade de "dia"
+    // Isso ignora a hora, simplificando a comparação de datas
+    private fun getDayUnit(timestamp: Long): Long {
+        return timestamp / TimeUnit.DAYS.toMillis(1)
     }
 
     override fun onCreateView(
@@ -49,12 +56,10 @@ class FragmentTelaA : Fragment() {
 
         // Configurações iniciais obrigatórias
         setupRecyclerView()
-        setupButton() // Agora este método terá a correção
+        setupButton()
 
         if (isTesting) {
             testAdapter()
-            // Se estiver em modo de teste, simula uma sequência para o card
-            updateProgressCard(5)
         } else {
             loadNotes()
         }
@@ -76,7 +81,7 @@ class FragmentTelaA : Fragment() {
     }
 
     private fun setupButton() {
-        // CORREÇÃO: Implementando o OnClickListener para o botão de adicionar nota no emptyState
+        // Implementando o OnClickListener para o botão de adicionar nota no emptyState
         binding.emptyState.findViewById<View>(R.id.btn_add_record).setOnClickListener {
             val intent = Intent(requireActivity(), AddHumorActivity::class.java)
             startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
@@ -94,11 +99,13 @@ class FragmentTelaA : Fragment() {
         )
         // O método updateUI já chama adapter.submitList
         updateUI(testNotes)
+        // No modo de teste, a atualização do card é feita pela lógica real se loadNotes não for chamada.
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            // O registro foi concluído. Recarrega as notas, o que aciona a lógica de incremento.
             loadNotes()
         }
     }
@@ -115,14 +122,19 @@ class FragmentTelaA : Fragment() {
                     updateUI(todayNotes)
 
                     // 2. Lógica para o Card de Progresso (Sequência)
+                    // Encontra o timestamp do registro mais recente para usar no cálculo de reset e no feedback
+                    val lastRecordedTimestamp = notes.mapNotNull { it.data?.get("time") as? Long }.maxOrNull()
+
+                    // O cálculo da sequência agora inclui a lógica de reset.
                     val sequence = calculateDailySequence(notes)
-                    updateProgressCard(sequence)
+
+                    updateProgressCard(sequence, lastRecordedTimestamp)
                 }
             }
         } ?: run {
             Log.d(TAG, "Usuário não logado")
             showEmptyState()
-            updateProgressCard(0) // Mostra 0 na sequência se não estiver logado
+            updateProgressCard(0, null) // Mostra 0 na sequência se não estiver logado
         }
     }
 
@@ -137,47 +149,89 @@ class FragmentTelaA : Fragment() {
         }
     }
 
-    // Função para calcular a sequência diária (dias consecutivos de registro)
+    /**
+     * Calcula a sequência de dias consecutivos de registro de humor, aplicando a lógica de Reset.
+     * Implementa a lógica do Mapa de Funcionalidade.
+     * @param notes A lista completa de HumorNote do usuário.
+     * @return O número de dias consecutivos (máximo 7).
+     */
     private fun calculateDailySequence(notes: List<HumorNote>): Int {
         if (notes.isEmpty()) return 0
 
-        // Extrai timestamps e garante que só há um por dia (usando a data em milissegundos)
-        val sortedDailyTimestamps = notes
+        // 1. Preparar os dias únicos e ordenados
+        val distinctRecordedDays = notes
             .mapNotNull { it.data?.get("time") as? Long }
-            .map { it / TimeUnit.DAYS.toMillis(1) } // Converte para o dia em que aconteceu
+            .map { getDayUnit(it) } // Converte para o dia unitário (ignora a hora)
             .distinct()
             .sortedDescending() // Começa do dia mais recente
 
-        if (sortedDailyTimestamps.isEmpty()) return 0
+        if (distinctRecordedDays.isEmpty()) return 0
 
+        // 2. Obter as datas de referência (D_Hoje e D_Última)
+        val todayDayUnit = getDayUnit(System.currentTimeMillis())
+        val lastRecordedDayUnit = distinctRecordedDays.first()
+
+        // 3. Verificação de Reset da Sequência (Etapa 1 do Mapa)
+        // Se a diferença entre D_Hoje e D_Última for maior que 1, houve quebra.
+        val dayDifference = todayDayUnit - lastRecordedDayUnit
+
+        // Se a última nota for de anteontem ou mais antiga (diff > 1), a sequência quebrou.
+        if (dayDifference > 1) {
+            Log.d(TAG, "RESET DE SEQUÊNCIA: Último registro ($lastRecordedDayUnit) muito antigo. Hoje: $todayDayUnit")
+            return 0 // Executar Reset (Etapa 4 do Mapa)
+        }
+
+        // 4. Lógica de Contagem
         var sequence = 0
-        var expectedDay = sortedDailyTimestamps.first() // O dia mais recente registrado
+        // O ponto de partida para a contagem retroativa é o dia mais recente registrado.
+        var expectedDay = lastRecordedDayUnit
 
-        for (day in sortedDailyTimestamps) {
+        for (day in distinctRecordedDays) {
             if (day == expectedDay) {
+                // A sequência continua
                 sequence++
                 expectedDay-- // Esperamos o dia anterior
             } else if (day < expectedDay) {
-                // Se o dia for muito mais antigo, a sequência quebrou
+                // Se o dia for muito mais antigo, a sequência consecutiva quebrou.
                 break
             }
         }
-        return sequence
+
+        // 5. Garantir o limite máximo de 7 (Etapa 6 do Mapa - Manter 7)
+        return sequence.coerceAtMost(7)
     }
 
-    // Função para atualizar o Card de Progresso com a Sequência
-    private fun updateProgressCard(sequence: Int) {
+    /**
+     * Atualiza os elementos visuais do Card de Progresso (Sequência, ProgressBar e Texto de Feedback).
+     * Removemos o emoji '🔥' conforme sua solicitação.
+     * @param sequence O valor da sequência atual (0-7).
+     * @param lastRecordedTimestamp O timestamp do último registro, usado para verificar se houve reset.
+     */
+    private fun updateProgressCard(sequence: Int, lastRecordedTimestamp: Long?) {
         // Acessa os elementos do layout incluído (progress_card) via ViewBinding
         binding.progressCard.tvSequenceDays.text = sequence.toString()
         binding.progressCard.progressBar.progress = sequence
 
         val maxDays = binding.progressCard.progressBar.max // 7 dias
 
-        if (sequence >= maxDays) {
-            binding.progressCard.tvSequenceDescription.text = "Parabéns! Sequência semanal completa!"
-        } else {
-            binding.progressCard.tvSequenceDescription.text = "Sua sequência diária de notas."
+        val todayDayUnit = getDayUnit(System.currentTimeMillis())
+        // Converte o timestamp para a unidade de dia
+        val lastDayUnit = if (lastRecordedTimestamp != null) getDayUnit(lastRecordedTimestamp) else null
+
+        // A sequência de 0 dias pode ser por 3 motivos:
+        // 1. Nunca houve registro (lastDayUnit == null).
+        // 2. Houve quebra de sequência (lastDayUnit != null e (todayDayUnit - lastDayUnit) > 1).
+
+        val isReset = sequence == 0 && lastDayUnit != null && (todayDayUnit - lastDayUnit) > 1
+
+        val descriptionText = when {
+            isReset -> "Sequência Reiniciada. Comece hoje!" // Feedback de Quebra
+            sequence >= maxDays -> "Parabéns! Sequência semanal completa!" // Feedback de Sucesso (sem emoji)
+            sequence > 0 -> " dias consecutivos!" // Feedback de Sequência (sem emoji)
+            else -> "Sua sequência diária de notas." // Estado inicial (0 registros)
         }
+
+        binding.progressCard.tvSequenceDescription.text = descriptionText
     }
 
     private fun filterTodayNotes(notes: List<HumorNote>): List<HumorNote> {
