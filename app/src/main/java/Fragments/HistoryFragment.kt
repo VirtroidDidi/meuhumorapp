@@ -1,6 +1,5 @@
 package com.example.apphumor
 
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,11 +10,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.AllNotesAdapter
 import com.example.apphumor.databinding.FragmentTelaCBinding
-import com.example.apphumor.models.HumorNote
 import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.google.firebase.auth.FirebaseAuth
 
-class FragmentTelaC : Fragment() {
+class HistoryFragment : Fragment() {
     private lateinit var binding: FragmentTelaCBinding
     private val viewModel: AddHumorViewModel by lazy { ViewModelProvider(this).get(AddHumorViewModel::class.java) }
     private lateinit var adapter: AllNotesAdapter
@@ -43,7 +41,7 @@ class FragmentTelaC : Fragment() {
 
         binding.recyclerViewAllNotes.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            adapter = this@FragmentTelaC.adapter
+            adapter = this@HistoryFragment.adapter
         }
     }
 

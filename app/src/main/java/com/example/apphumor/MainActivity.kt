@@ -9,13 +9,13 @@ import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
 
 // CORREÇÃO: A classe agora implementa a interface FragmentTelaB.LogoutListener
-class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
+class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
-    private val fragmentTelaA = HomeFragment()
-    private val fragmentTelaB = FragmentTelaB()
-    private val fragmentTelaC = FragmentTelaC()
+    private val homeFragment = HomeFragment()
+    private val profileFragment = ProfileFragment()
+    private val historyFragment = HistoryFragment()
     private var activeFragment: Fragment? = null
     //private val TAG = "MainActivity"
 
@@ -38,38 +38,38 @@ class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
     private fun showInitialFragment() {
         supportFragmentManager .beginTransaction()
             // Adiciona a Tela A (Hoje)
-            .add(R.id. fragmentContainerMain ,  fragmentTelaA ,  "fragment_a")
+            .add(R.id. fragmentContainerMain ,  homeFragment ,  "fragment_a")
             // Adiciona a Tela B (Usuário)
-            .add(R.id. fragmentContainerMain ,  fragmentTelaB ,  "fragment_b")
+            .add(R.id. fragmentContainerMain ,  profileFragment ,  "fragment_b")
             // Adiciona a Tela C (Histórico)
-            .add(R.id. fragmentContainerMain ,  fragmentTelaC ,  "fragment_c")
+            .add(R.id. fragmentContainerMain ,  historyFragment ,  "fragment_c")
             // Esconde as telas B e C, deixando A como ativa
-            .hide(fragmentTelaB)
-            .hide(fragmentTelaC)
+            .hide(profileFragment)
+            .hide(historyFragment)
             .commit()
 
-        activeFragment = fragmentTelaA
+        activeFragment = homeFragment
     }
 
     private fun setupNavigationButtons() {
         // Botão HOJE (FragmentTelaA)
         binding.btnHoje.setOnClickListener  {
-            if (activeFragment != fragmentTelaA) {
-                showFragment(fragmentTelaA)
+            if (activeFragment != homeFragment) {
+                showFragment(homeFragment)
             }
         }
 
         // NOVO: Botão USUÁRIO (FragmentTelaB)
         binding.btnUsuario.setOnClickListener  {
-            if (activeFragment != fragmentTelaB) {
-                showFragment(fragmentTelaB)
+            if (activeFragment != profileFragment) {
+                showFragment(profileFragment)
             }
         }
 
         // Botão HISTÓRICO (FragmentTelaC)
         binding.btnHistorico.setOnClickListener  {
-            if (activeFragment != fragmentTelaC) {
-                showFragment(fragmentTelaC)
+            if (activeFragment != historyFragment) {
+                showFragment(historyFragment)
             }
         }
     }

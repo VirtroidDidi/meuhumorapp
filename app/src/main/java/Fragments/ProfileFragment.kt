@@ -14,7 +14,7 @@ import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
 
-class FragmentTelaB : Fragment() {
+class ProfileFragment : Fragment() {
     // Usamos _binding para a referência mutável e binding para o getter não-nulo
     private var _binding: FragmentTelaBBinding? = null
     private val binding get() = _binding!!
