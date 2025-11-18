@@ -20,13 +20,12 @@ import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.google.firebase.auth.FirebaseAuth
 import java.util.*
 import java.util.concurrent.TimeUnit // Importação para facilitar a conversão de tempo
-import kotlin.math.abs
 
-class FragmentTelaA : Fragment() {
+class HomeFragment : Fragment() {
     private lateinit var binding: FragmentTelaABinding
     private val viewModel: AddHumorViewModel by lazy { ViewModelProvider(this).get(AddHumorViewModel::class.java) }
     private lateinit var adapter: NoteAdapter
-    private val currentUser = FirebaseAuth.getInstance().currentUser
+            private val currentUser = FirebaseAuth.getInstance().currentUser
     private val TAG = "FragmentTelaA"
 
     // Altere para false quando quiser testar com dados reais
@@ -76,7 +75,7 @@ class FragmentTelaA : Fragment() {
         binding.recyclerViewNotes.apply {
             layoutManager = LinearLayoutManager(requireContext())
             setHasFixedSize(true)
-            adapter = this@FragmentTelaA.adapter
+            adapter = this@HomeFragment.adapter
         }
     }
 

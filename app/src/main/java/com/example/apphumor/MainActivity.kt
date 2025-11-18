@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import com.example.apphumor.databinding.ActivityMainBinding
+import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
 
 // CORREÇÃO: A classe agora implementa a interface FragmentTelaB.LogoutListener
@@ -12,7 +13,7 @@ class MainActivity : AppCompatActivity(), FragmentTelaB.LogoutListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
-    private val fragmentTelaA = FragmentTelaA()
+    private val fragmentTelaA = HomeFragment()
     private val fragmentTelaB = FragmentTelaB()
     private val fragmentTelaC = FragmentTelaC()
     private var activeFragment: Fragment? = null
