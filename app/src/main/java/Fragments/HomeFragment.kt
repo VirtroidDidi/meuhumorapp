@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.apphumor.adapter.NoteAdapter
+import com.example.apphumor.adapter.HumorNoteAdapter
 // Certifique-se de que o binding para o fragment_tela_a inclui a referência ao seu card.
 // Se você estiver usando ViewBinding (FragmentTelaABinding), o novo card é acessado
 // através do binding.progressCard (o ID que demos ao <include>).
@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit // Importação para facilitar a conversão
 class HomeFragment : Fragment() {
     private lateinit var binding: FragmentTelaABinding
     private val viewModel: AddHumorViewModel by lazy { ViewModelProvider(this).get(AddHumorViewModel::class.java) }
-    private lateinit var adapter: NoteAdapter
+    private lateinit var adapter: HumorNoteAdapter
             private val currentUser = FirebaseAuth.getInstance().currentUser
     private val TAG = "FragmentTelaA"
 
@@ -65,7 +65,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = NoteAdapter { note ->
+        adapter = HumorNoteAdapter { note ->
             val intent = Intent(requireActivity(), AddHumorActivity::class.java).apply {
                 putExtra("EDIT_NOTE", note) // Agora funcionará
             }
