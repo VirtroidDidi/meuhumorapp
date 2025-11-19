@@ -9,21 +9,28 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.example.apphumor.databinding.FragmentTelaBBinding // Importação correta
+import androidx.lifecycle.ViewModelProvider
+import com.example.apphumor.databinding.FragmentTelaBBinding
 import com.example.apphumor.models.User
-import com.example.apphumor.repository.DatabaseRepository
-import com.google.firebase.auth.FirebaseAuth
+import com.example.apphumor.viewmodel.ProfileViewModel // Import do ViewModel
+// É necessário importar R se você usar recursos (drawables/colors) sem o R.
+// import com.example.apphumor.R
 
+
+/**
+ * Fragmento de Perfil (antigo FragmentTelaB).
+ * Agora usa ProfileViewModel para gerenciar o estado e as operações do perfil (carregar, editar, logout).
+ */
 class ProfileFragment : Fragment() {
-    // Usamos _binding para a referência mutável e binding para o getter não-nulo
     private var _binding: FragmentTelaBBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var auth: FirebaseAuth
-    private val dbRepository = DatabaseRepository()
-    private val TAG = "FragmentTelaB"
+    // ViewModel para gerenciar a lógica de dados do perfil
+    private lateinit var viewModel: ProfileViewModel
 
-    private var currentUserData: User? = null
+    private val TAG = "ProfileFragment"
+
+    // Controle de UI local
     private var isEditing = false
 
     // Interface para comunicar o evento de Logout para a Activity
@@ -35,73 +42,104 @@ class ProfileFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Infla o layout e configura o binding
         _binding = FragmentTelaBBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        auth = FirebaseAuth.getInstance()
 
-        loadUserData()
-        // CORREÇÃO: Chama o setup do botão de logout
-        setupLogoutButton()
-        setupEditProfileButton()
+        // Inicializa o ViewModel
+        viewModel = ViewModelProvider(this).get(ProfileViewModel::class.java)
 
-        // Inicializa a UI no modo de exibição (sem edição)
+        setupListeners()
+        setupObservers()
+
+        // Inicializa a UI no modo de exibição
         setEditingMode(false)
     }
 
-    /**
-     * Carrega os dados do usuário do Firebase e armazena localmente.
-     */
-    private fun loadUserData() {
-        val firebaseUser = auth.currentUser
-        if (firebaseUser == null) {
-            updateUIWithUserData(null)
-            return
+    private fun setupListeners() {
+        // Ação para o botão de Editar/Salvar
+        binding.btnEditProfile.setOnClickListener {
+            if (isEditing) {
+                saveProfileChanges() // Coleta dados e delega
+            } else {
+                setEditingMode(true)
+                binding.etUserName.requestFocus()
+            }
         }
 
-        // Busca os dados do usuário no Realtime Database
-        dbRepository.getUser(firebaseUser.uid) { user ->
-            activity?.runOnUiThread {
-                // Armazena os dados recuperados
-                currentUserData = user
-                updateUIWithUserData(user)
-            }
+        // Ação para o botão de Logout
+        binding.btnLogoutFragment.setOnClickListener {
+            viewModel.logout() // Delega o logout
         }
     }
 
     /**
-     * Atualiza os campos de texto na UI com os dados do usuário.
+     * Configura a observação dos LiveData do ViewModel para atualizar a UI.
      */
-    private fun updateUIWithUserData(user: User?) {
+    private fun setupObservers() {
+        // 1. Observa o perfil do usuário
+        viewModel.userProfile.observe(viewLifecycleOwner) { user ->
+            displayUserData(user)
+            setEditingMode(false) // Sai do modo de edição após um carregamento ou sucesso na atualização
+        }
+
+        // 2. Observa o status de atualização (sucesso ou erro)
+        viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
+            status?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+                viewModel.clearStatus() // Limpa o status
+            }
+        }
+
+        // 3. Observa o evento de Logout
+        viewModel.logoutEvent.observe(viewLifecycleOwner) { isLoggedOut ->
+            if (isLoggedOut == true) {
+                (activity as? LogoutListener)?.onLogoutSuccess()
+                viewModel.clearLogoutEvent() // Limpa o evento
+            }
+        }
+
+        // 4. Observa o estado de carregamento para controle de UI
+        viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
+            binding.btnEditProfile.isEnabled = !isLoading
+            binding.btnLogoutFragment.isEnabled = !isLoading
+        }
+    }
+
+    /**
+     * Preenche os campos de texto na UI com os dados do User.
+     */
+    private fun displayUserData(user: User?) {
+        // Obtenção do e-mail de autenticação (usado para o nome de exibição se o nome não existir)
+        // Isso é possível porque o ViewModel expõe o `firebaseAuthInstance`
+        val currentAuthEmail = viewModel.firebaseAuthInstance.currentUser?.email
         val defaultName = "Usuário(a)"
-        // Tenta usar o nome do banco, ou a primeira parte do e-mail, ou o nome padrão
-        val displayName = user?.nome ?: auth.currentUser?.email?.substringBefore('@') ?: defaultName
+
+        // CORREÇÃO: Usando o e-mail do User ou do Auth
+        val displayName = user?.nome ?: currentAuthEmail?.substringBefore('@') ?: defaultName
 
         // --- Atualiza o Card de Boas-vindas ---
-        binding.tvWelcomeMessage.text = "Bem-vindo(a), $displayName!"
+        binding.tvWelcomeMessage.text = "Bem-vindo(a), $displayName!" // Usando string literal temporariamente aqui
 
-        // --- Atualiza os Dados do Usuário nos campos de texto (TextInputEditTexts) ---
+        // --- Atualiza os Dados do Usuário nos campos de texto ---
+        // CORREÇÃO: Corrigido para não usar o operador Elvis no setText
         binding.etUserName.setText(user?.nome ?: "Não informado")
-        // O email é preenchido, mas permanece não editável
-        binding.etUserEmail.setText(user?.email ?: auth.currentUser?.email ?: "N/A")
-        // A Idade será exibida apenas o número
+        binding.etUserEmail.setText(user?.email ?: currentAuthEmail ?: "N/A")
         binding.etUserIdade.setText(user?.idade?.toString() ?: "Não informado")
 
-        // Garante que o email não seja editável, mesmo que o isEditing mude
+        // Garante que o email não seja editável
         binding.etUserEmail.isEnabled = false
         context?.let {
-            // Garante que o fundo seja transparente para o email, pois não deve ser editado
+            // Requer importação de R.drawable
             binding.etUserEmail.background = ContextCompat.getDrawable(it, android.R.color.transparent)
         }
     }
 
     /**
      * Alterna entre o modo de exibição (somente leitura) e o modo de edição (input ativo).
-     * @param editing Se true, entra no modo de edição. Se false, volta para o modo de exibição.
      */
     private fun setEditingMode(editing: Boolean) {
         this.isEditing = editing
@@ -111,18 +149,15 @@ class ProfileFragment : Fragment() {
         val editableFields = listOf(binding.etUserName, binding.etUserIdade)
 
         for (field in editableFields) {
-            // Habilita/Desabilita a edição e o foco
             field.isEnabled = editing
             field.isFocusable = editing
             field.isFocusableInTouchMode = editing
 
-            // Altera a cor de fundo para dar feedback visual
             if (editing) {
-                // No modo de edição, usamos o fundo branco (ou outra cor)
-                // O Ideal é usar um background que indique edição, como um underline
-                field.background = ContextCompat.getDrawable(context, R.drawable.edit_text_border) // Certifique-se de ter um drawable edit_text_background ou remova esta linha se estiver usando tema Material padrão
+                // Modo de edição
+                field.background = ContextCompat.getDrawable(context, R.drawable.edit_text_border)
             } else {
-                // No modo de exibição, usamos o fundo transparente
+                // Modo de exibição
                 field.background = ContextCompat.getDrawable(context, android.R.color.transparent)
             }
         }
@@ -130,118 +165,48 @@ class ProfileFragment : Fragment() {
         // Atualiza o botão
         if (editing) {
             binding.btnEditProfile.text = "Salvar Alterações"
-            // Referencia o drawable do SEU projeto
             binding.btnEditProfile.setIconResource(R.drawable.ic_save_24)
         } else {
             binding.btnEditProfile.text = "Editar Perfil"
-            // Referencia o drawable do SEU projeto
             binding.btnEditProfile.setIconResource(R.drawable.ic_edit_24)
         }
-    }
 
-
-    private fun setupEditProfileButton() {
-        binding.btnEditProfile.setOnClickListener {
-            if (isEditing) {
-                // Se está no modo de edição, o clique deve SALVAR
-                saveProfileChanges()
-            } else {
-                // Se está no modo de exibição, o clique deve EDITAR
-                setEditingMode(true)
-                // Coloca o foco no primeiro campo para o usuário começar a digitar
-                binding.etUserName.requestFocus()
-            }
-        }
+        // Esconde o botão de Logout durante a edição
+        binding.btnLogoutFragment.visibility = if (editing) View.GONE else View.VISIBLE
     }
 
     /**
-     * Coleta os dados dos campos, valida e salva no Firebase.
+     * Coleta os dados dos campos e delega a validação e o salvamento ao ViewModel.
      */
     private fun saveProfileChanges() {
-        val uid = auth.currentUser?.uid
-        if (uid == null || currentUserData == null) {
-            Toast.makeText(context, "Erro: Usuário não autenticado ou dados ausentes.", Toast.LENGTH_SHORT).show()
-            setEditingMode(false)
-            return
-        }
-
-        // 1. Coleta os novos dados
         val newName = binding.etUserName.text.toString().trim()
         val newAgeString = binding.etUserIdade.text.toString().trim()
+
         val newAge = newAgeString.toIntOrNull()
 
-        // 2. Validação simples
-        if (newName.isEmpty()) {
-            Toast.makeText(context, "O nome não pode ser vazio.", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (newAge == null || newAge <= 0 || newAge > 150) {
-            Toast.makeText(context, "Idade inválida. Use um número entre 1 e 150.", Toast.LENGTH_SHORT).show()
+        if (newName.isBlank() || newAge == null) {
+            Toast.makeText(context, "Preencha o nome e a idade corretamente.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // 3. Cria o objeto User com os novos dados
-        // Usamos .copy() para manter o UID e outros campos (como email) inalterados
-        val updatedUser = currentUserData!!.copy(
-            nome = newName,
-            idade = newAge
-        )
-
-        // 4. Salva no Firebase
-        dbRepository.updateUser(updatedUser,
-            onSuccess = {
-                // Reverte para o modo de exibição e recarrega para confirmar
-                Toast.makeText(context, "Perfil atualizado com sucesso!", Toast.LENGTH_SHORT).show()
-                loadUserData() // Recarrega os dados e atualiza a UI
-                setEditingMode(false) // Volta para o modo de exibição
-            },
-            onError = { errorMsg ->
-                Toast.makeText(context, "Falha ao salvar: $errorMsg", Toast.LENGTH_LONG).show()
-                // Permanece no modo de edição para tentar corrigir o erro
-            }
-        )
-    }
-
-    private fun setupLogoutButton() {
-        // Configura o Listener para o botão de Logout
-        binding.btnLogoutFragment.setOnClickListener {
-            performLogout()
-        }
-    }
-
-    private fun performLogout() {
-        // 1. Desloga do Firebase
-        auth.signOut()
-
-        // 2. Notifica a Activity (Main Activity) que o logout foi concluído
-        // O casting seguro 'as? LogoutListener' garante que a notificação só
-        // ocorra se a Activity implementar a interface, evitando crashes.
-        (activity as? LogoutListener)?.onLogoutSuccess()
-
-        // Exibe uma mensagem de sucesso no Fragment, caso o callback falhe
-        Toast.makeText(context, "Sessão encerrada com sucesso!", Toast.LENGTH_SHORT).show()
+        // DELEGAÇÃO CRÍTICA: Chama a função do ViewModel.
+        viewModel.updateProfile(newName, newAge)
     }
 
     override fun onResume() {
         super.onResume()
-        // Garante que os dados sejam recarregados ao voltar para a tela
-        loadUserData()
+        viewModel.loadUserProfile()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Limpa a referência ao binding para evitar vazamentos de memória
         _binding = null
     }
 
-    // Associa o Fragment à Activity e garante que a interface LogoutListener seja implementada
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        // Este é um check de segurança. Se você removeu a MainActivity, este log é importante.
         if (context !is LogoutListener) {
             Log.e(TAG, "$context deve implementar LogoutListener para o logout funcionar.")
-            // Você pode até lançar uma exceção aqui para um debug mais agressivo
-            // throw RuntimeException("$context must implement LogoutListener")
         }
     }
 }
