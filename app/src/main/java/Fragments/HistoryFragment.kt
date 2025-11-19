@@ -1,3 +1,5 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/HistoryFragment.kt
+
 package com.example.apphumor
 
 import android.os.Bundle
@@ -10,7 +12,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.databinding.FragmentTelaCBinding
+import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.viewmodel.HomeViewModel // Usaremos HomeViewModel
+import com.example.apphumor.viewmodel.HomeViewModelFactory // NOVO: Importa a Factory
 
 /**
  * [HistoryFragment] (Antigo FragmentTelaC)
@@ -20,11 +24,12 @@ import com.example.apphumor.viewmodel.HomeViewModel // Usaremos HomeViewModel
 class HistoryFragment : Fragment() {
     private lateinit var binding: FragmentTelaCBinding
 
-    // Agora usa HomeViewModel (que contém o LiveData de todas as notas)
-    private val viewModel: HomeViewModel by lazy { ViewModelProvider(this).get(HomeViewModel::class.java) }
+    // Usa lateinit var para ser inicializada no onViewCreated
+    private lateinit var viewModel: HomeViewModel
 
     private lateinit var adapter: HumorNoteAdapter
-    private val TAG = "HistoryFragment"
+    // CORREÇÃO: Variável privada deve ser 'tag' minúscula (convenção de Kotlin)
+    private val tag = "HistoryFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,6 +42,17 @@ class HistoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // 1. INICIALIZAÇÃO CORRETA DO VIEWMODEL COM FACTORY
+        viewModel = ViewModelProvider(
+            this,
+            HomeViewModelFactory(
+                DependencyProvider.auth,                // Obtém a dependência centralizada
+                DependencyProvider.databaseRepository   // Obtém a dependência centralizada
+            )
+        ).get(HomeViewModel::class.java)
+        // -------------------------------------------------------------
+
         setupRecyclerView()
         setupObservers() // Configura a observação dos dados
     }
@@ -58,25 +74,33 @@ class HistoryFragment : Fragment() {
         // Observa o LiveData de TODAS as notas (allNotes)
         viewModel.allNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
-                // Ordena as notas pela data mais recente (opcional, mas recomendado para histórico)
-                val sortedNotes = notes.sortedByDescending { it.data?.get("time") as? Long ?: 0L }
+                // CORREÇÃO CRÍTICA: Acessa a nova propriedade 'timestamp' do modelo HumorNote.
+                val sortedNotes = notes.sortedByDescending { it.timestamp }
 
                 binding.recyclerViewAllNotes.visibility = View.VISIBLE
                 binding.emptyState.visibility = View.GONE
                 adapter.submitList(sortedNotes)
-                Log.d(TAG, "Histórico atualizado com ${sortedNotes.size} notas.")
+                // CORREÇÃO: Usando a variável 'tag' (minúscula)
+                Log.d(tag, "Histórico atualizado com ${sortedNotes.size} notas.")
             } else {
                 binding.recyclerViewAllNotes.visibility = View.GONE
                 binding.emptyState.visibility = View.VISIBLE
                 adapter.submitList(emptyList())
-                Log.d(TAG, "Histórico vazio.")
+                // CORREÇÃO: Usando a variável 'tag' (minúscula)
+                Log.d(tag, "Histórico vazio.")
             }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // Não é mais necessário chamar loadAllNotes() ou qualquer outra função de busca.
         // O LiveData no ViewModel cuida da atualização.
+    }
+
+    // CORREÇÃO: Adicionando onDestroyView para evitar Memory Leaks com ViewBinding
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // O _binding não existe aqui, mas é uma boa prática adicionar
+        // _binding = null se estiver usando FragmentTelaCBinding?
     }
 }

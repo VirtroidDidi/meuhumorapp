@@ -1,8 +1,11 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/InsightsViewModel.kt
+
 package com.example.apphumor.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.switchMap
 import com.example.apphumor.R
 import com.example.apphumor.models.HumorNote
@@ -10,17 +13,15 @@ import com.example.apphumor.models.Insight
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import java.util.*
-// Importação removida: kotlin.math.abs (se não for usado)
 
 /**
  * [InsightsViewModel]
  * Responsável por buscar as notas de humor, calcular e expor os insights prontos para a UI.
- * A lógica de filtro por mês e contagem de humor é executada aqui.
  */
-class InsightsViewModel : ViewModel() {
-
-    private val auth = FirebaseAuth.getInstance()
-    private val dbRepository = DatabaseRepository()
+class InsightsViewModel(
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
+) : ViewModel() {
 
     companion object {
         private const val TAG = "InsightsViewModel"
@@ -40,7 +41,6 @@ class InsightsViewModel : ViewModel() {
 
     /**
      * LiveData que transforma a lista bruta de notas nos Insights prontos para a UI.
-     * O cálculo ocorre apenas quando allNotesLiveData é atualizado.
      */
     val insights: LiveData<List<Insight>> = allNotesLiveData.switchMap { notes ->
         val result = MutableLiveData<List<Insight>>()
@@ -54,7 +54,7 @@ class InsightsViewModel : ViewModel() {
 
 
     init {
-        // Inicia o processo de busca, notificando o LiveData com o UID
+        // Inicia o processo de busca
         val userId = auth.currentUser?.uid
         userIdLiveData.value = userId
     }
@@ -72,8 +72,8 @@ class InsightsViewModel : ViewModel() {
 
         val notesCurrentMonth = notes.filter { note ->
             val noteCalendar = Calendar.getInstance().apply {
-                // CORREÇÃO: Removendo tags de citação
-                timeInMillis = note.data?.get("time") as? Long ?: 0L
+                // CORREÇÃO CRÍTICA: Acessando 'timestamp' diretamente
+                timeInMillis = note.timestamp
             }
             noteCalendar.get(Calendar.MONTH) == currentMonth &&
                     noteCalendar.get(Calendar.YEAR) == currentYear
@@ -141,7 +141,6 @@ class InsightsViewModel : ViewModel() {
     }
 
     private fun getEmptyMonthInsights(): List<Insight> {
-        // Insights padrão se não houver registros este mês
         return listOf(
             Insight(
                 rotulo = "Dias Ativos (Mês)",
@@ -162,5 +161,18 @@ class InsightsViewModel : ViewModel() {
                 backgroundColorResId = R.color.insight_neutral_bg
             )
         )
+    }
+}
+
+class InsightsViewModelFactory(
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(InsightsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return InsightsViewModel(auth, dbRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

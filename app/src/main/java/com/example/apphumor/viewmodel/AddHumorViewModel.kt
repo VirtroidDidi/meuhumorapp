@@ -1,14 +1,17 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/AddHumorViewModel.kt
+
 package com.example.apphumor.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope // NOVO: Para lançar coroutines
+import androidx.lifecycle.ViewModelProvider // Adicionado
+import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.flow.MutableStateFlow // NOVO: StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch // NOVO: Para Coroutines
-import android.util.Log
+import kotlinx.coroutines.launch
 
 /**
  * Representa os possíveis estados da operação de salvamento/atualização na UI.
@@ -23,18 +26,18 @@ sealed class SaveState {
 /**
  * [AddHumorViewModel]
  * Gerencia a lógica de salvar e atualizar notas usando Kotlin Coroutines e StateFlow.
+ * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
  */
-class AddHumorViewModel : ViewModel() {
+class AddHumorViewModel(
+    private val repository: DatabaseRepository, // Recebido no construtor
+    private val auth: FirebaseAuth // Recebido no construtor
+) : ViewModel() {
 
-    private val repository = DatabaseRepository()
-    private val auth = FirebaseAuth.getInstance()
     private val TAG = "AddHumorViewModel"
 
     // StateFlow para expor o estado de salvamento à Activity
     private val _saveStatus = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveStatus: StateFlow<SaveState> = _saveStatus
-
-    // REMOVIDOS: updateHumorNote, saveHumorNote e getHumorNotes (os antigos com callbacks)
 
     /**
      * Inicia a operação de salvamento ou atualização de uma nota de humor,
@@ -84,5 +87,22 @@ class AddHumorViewModel : ViewModel() {
      */
     fun resetSaveStatus() {
         _saveStatus.value = SaveState.Idle
+    }
+}
+
+/**
+ * Factory personalizada para instanciar AddHumorViewModel com as dependências necessárias.
+ */
+class AddHumorViewModelFactory(
+    private val repository: DatabaseRepository,
+    private val auth: FirebaseAuth
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AddHumorViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AddHumorViewModel(repository, auth) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

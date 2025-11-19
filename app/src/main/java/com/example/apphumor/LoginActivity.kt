@@ -18,12 +18,12 @@ class LoginViewModel : ViewModel() {
 
     // Estados observáveis pela View. Usamos MutableLiveData internamente para garantir que apenas o VM os modifique.
     private val _loginSuccess = MutableLiveData<Boolean>()
-    private val _errorMessage = MutableLiveData<String>()
+    private val _errorMessage = MutableLiveData<String?>()
     private val _isLoading = MutableLiveData<Boolean>()
 
     // LiveData exposto (Somente leitura para a Activity)
     val loginSuccess: LiveData<Boolean> = _loginSuccess
-    val errorMessage: LiveData<String> = _errorMessage
+    val errorMessage: MutableLiveData<String?> = _errorMessage
     val isLoading: LiveData<Boolean> = _isLoading
 
     /**

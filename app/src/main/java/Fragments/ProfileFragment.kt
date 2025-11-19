@@ -1,6 +1,9 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/ProfileFragment.kt
+
 package com.example.apphumor
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,15 +14,19 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.apphumor.databinding.FragmentTelaBBinding
-import com.example.apphumor.models.User
-import com.example.apphumor.viewmodel.ProfileViewModel // Import do ViewModel
-// É necessário importar R se você usar recursos (drawables/colors) sem o R.
-// import com.example.apphumor.R
 
+// 1. SERVICE LOCATOR (usando 'di' como padrão final)
+import com.example.apphumor.di.DependencyProvider
+
+// 2. IMPORT DA CLASSE DO VIEWMODEL FACTORY
+import com.example.apphumor.viewmodel.ProfileViewModelFactory // <--- ESSA LINHA É CRÍTICA!
+import com.example.apphumor.models.User
+import com.example.apphumor.viewmodel.ProfileViewModel
+import com.example.apphumor.viewmodel.LoginActivity
+import com.example.apphumor.R
 
 /**
  * Fragmento de Perfil (antigo FragmentTelaB).
- * Agora usa ProfileViewModel para gerenciar o estado e as operações do perfil (carregar, editar, logout).
  */
 class ProfileFragment : Fragment() {
     private var _binding: FragmentTelaBBinding? = null
@@ -28,7 +35,8 @@ class ProfileFragment : Fragment() {
     // ViewModel para gerenciar a lógica de dados do perfil
     private lateinit var viewModel: ProfileViewModel
 
-    private val TAG = "ProfileFragment"
+    // Convenção de nomes (lowerCamelCase para variáveis)
+    private val tag = "ProfileFragment"
 
     // Controle de UI local
     private var isEditing = false
@@ -37,6 +45,10 @@ class ProfileFragment : Fragment() {
     interface LogoutListener {
         fun onLogoutSuccess()
     }
+
+    // Variável para a interface de callback
+    private var logoutListener: LogoutListener? = null
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,8 +61,14 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Inicializa o ViewModel
-        viewModel = ViewModelProvider(this).get(ProfileViewModel::class.java)
+        // INICIALIZAÇÃO CORRETA DO VIEWMODEL COM FACTORY
+        viewModel = ViewModelProvider(
+            this,
+            ProfileViewModelFactory(
+                DependencyProvider.auth,
+                DependencyProvider.databaseRepository
+            )
+        ).get(ProfileViewModel::class.java)
 
         setupListeners()
         setupObservers()
@@ -60,92 +78,68 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        // Ação para o botão de Editar/Salvar
         binding.btnEditProfile.setOnClickListener {
             if (isEditing) {
-                saveProfileChanges() // Coleta dados e delega
+                saveProfileChanges()
             } else {
                 setEditingMode(true)
                 binding.etUserName.requestFocus()
             }
         }
 
-        // Ação para o botão de Logout
         binding.btnLogoutFragment.setOnClickListener {
-            viewModel.logout() // Delega o logout
+            viewModel.logout()
         }
     }
 
-    /**
-     * Configura a observação dos LiveData do ViewModel para atualizar a UI.
-     */
     private fun setupObservers() {
-        // 1. Observa o perfil do usuário
         viewModel.userProfile.observe(viewLifecycleOwner) { user ->
-            displayUserData(user)
-            setEditingMode(false) // Sai do modo de edição após um carregamento ou sucesso na atualização
-        }
-
-        // 2. Observa o status de atualização (sucesso ou erro)
-        viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
-            status?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
-                viewModel.clearStatus() // Limpa o status
+            user?.let {
+                displayProfileData(it)
+                setEditingMode(false)
+            } ?: run {
+                if (viewModel.firebaseAuthInstance.currentUser == null) {
+                    logoutListener?.onLogoutSuccess()
+                }
             }
         }
 
-        // 3. Observa o evento de Logout
-        viewModel.logoutEvent.observe(viewLifecycleOwner) { isLoggedOut ->
-            if (isLoggedOut == true) {
-                (activity as? LogoutListener)?.onLogoutSuccess()
-                viewModel.clearLogoutEvent() // Limpa o evento
-            }
-        }
-
-        // 4. Observa o estado de carregamento para controle de UI
         viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
             binding.btnEditProfile.isEnabled = !isLoading
             binding.btnLogoutFragment.isEnabled = !isLoading
         }
-    }
 
-    /**
-     * Preenche os campos de texto na UI com os dados do User.
-     */
-    private fun displayUserData(user: User?) {
-        // Obtenção do e-mail de autenticação (usado para o nome de exibição se o nome não existir)
-        // Isso é possível porque o ViewModel expõe o `firebaseAuthInstance`
-        val currentAuthEmail = viewModel.firebaseAuthInstance.currentUser?.email
-        val defaultName = "Usuário(a)"
+        viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
+            status?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_LONG).show()
+                viewModel.clearStatus()
+            }
+        }
 
-        // CORREÇÃO: Usando o e-mail do User ou do Auth
-        val displayName = user?.nome ?: currentAuthEmail?.substringBefore('@') ?: defaultName
-
-        // --- Atualiza o Card de Boas-vindas ---
-        binding.tvWelcomeMessage.text = "Bem-vindo(a), $displayName!" // Usando string literal temporariamente aqui
-
-        // --- Atualiza os Dados do Usuário nos campos de texto ---
-        // CORREÇÃO: Corrigido para não usar o operador Elvis no setText
-        binding.etUserName.setText(user?.nome ?: "Não informado")
-        binding.etUserEmail.setText(user?.email ?: currentAuthEmail ?: "N/A")
-        binding.etUserIdade.setText(user?.idade?.toString() ?: "Não informado")
-
-        // Garante que o email não seja editável
-        binding.etUserEmail.isEnabled = false
-        context?.let {
-            // Requer importação de R.drawable
-            binding.etUserEmail.background = ContextCompat.getDrawable(it, android.R.color.transparent)
+        viewModel.logoutEvent.observe(viewLifecycleOwner) { loggedOut ->
+            if (loggedOut) {
+                logoutListener?.onLogoutSuccess()
+                viewModel.clearLogoutEvent()
+            }
         }
     }
 
     /**
-     * Alterna entre o modo de exibição (somente leitura) e o modo de edição (input ativo).
+     * Exibe os dados do usuário na UI.
+     */
+    private fun displayProfileData(user: User) {
+        binding.etUserEmail.setText(user.email ?: viewModel.firebaseAuthInstance.currentUser?.email)
+        binding.etUserName.setText(user.nome)
+        binding.etUserIdade.setText(user.idade?.toString())
+    }
+
+    /**
+     * Alterna o modo de edição dos campos de texto e o texto do botão principal.
      */
     private fun setEditingMode(editing: Boolean) {
         this.isEditing = editing
         val context = context ?: return
 
-        // Campos que podem ser editados: Nome e Idade
         val editableFields = listOf(binding.etUserName, binding.etUserIdade)
 
         for (field in editableFields) {
@@ -154,13 +148,15 @@ class ProfileFragment : Fragment() {
             field.isFocusableInTouchMode = editing
 
             if (editing) {
-                // Modo de edição
                 field.background = ContextCompat.getDrawable(context, R.drawable.edit_text_border)
             } else {
-                // Modo de exibição
                 field.background = ContextCompat.getDrawable(context, android.R.color.transparent)
             }
         }
+
+        binding.etUserEmail.isEnabled = false
+        binding.etUserEmail.background = ContextCompat.getDrawable(context, android.R.color.transparent)
+
 
         // Atualiza o botão
         if (editing) {
@@ -189,7 +185,6 @@ class ProfileFragment : Fragment() {
             return
         }
 
-        // DELEGAÇÃO CRÍTICA: Chama a função do ViewModel.
         viewModel.updateProfile(newName, newAge)
     }
 
@@ -205,8 +200,23 @@ class ProfileFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        if (context !is LogoutListener) {
-            Log.e(TAG, "$context deve implementar LogoutListener para o logout funcionar.")
+        if (context is LogoutListener) {
+            logoutListener = context
+        } else {
+            Log.e(tag, "$context deve implementar LogoutListener para o logout.")
+            logoutListener = object : LogoutListener {
+                override fun onLogoutSuccess() {
+                    val intent = Intent(requireActivity(), LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    requireActivity().finish()
+                }
+            }
         }
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        logoutListener = null
     }
 }

@@ -1,67 +1,45 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/models/Models.kt
+
 package com.example.apphumor.models
 
-import android.os.Parcel
 import android.os.Parcelable
-import com.google.firebase.database.Exclude // Importar para exclusão
+import com.google.firebase.firestore.DocumentId
+import com.google.firebase.database.Exclude // Importação necessária para evitar duplicação no DB
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 
-
-
-
-// Classe para representar os dados do usuário
+/**
+ * Classe de modelo para armazenar informações do usuário.
+ * Imutável (val).
+ */
 data class User(
-    var uid: String? = null,
-    var nome: String? = null,
-    var email: String? = null,
-    var idade: Int? = null
-    // outros campos...
+    @DocumentId
+    @get:Exclude // Não salva o UID dentro do objeto JSON, pois já é a chave do nó
+    val uid: String? = null,
+
+    val nome: String? = null,
+    val email: String? = null,
+    val idade: Int? = null
 )
 
-// Classe para representar a nota de humor
-
+/**
+ * Classe de modelo para uma Nota de Humor.
+ * Totalmente imutável (val).
+ */
+@Parcelize
 data class HumorNote(
-    var id: String? = null,
-    var data: Map<String, Any> = emptyMap(),
-    var humor: String? = null,
-    var descricao: String? = null
-) : Parcelable {
+    @DocumentId
+    @get:Exclude // O ID é a chave do nó, não precisa ser gravado dentro do JSON
+    val id: String? = null,
 
-    constructor(parcel: Parcel) : this(
-        parcel.readString(),
-        mutableMapOf<String, Any>().apply {
-            val size = parcel.readInt()
-            for (i in 0 until size) {
-                put(parcel.readString()!!, parcel.readValue(Any::class.java.classLoader)!!)
-            }
-        },
-        parcel.readString(),
-        parcel.readString()
-    )
+    val userId: String? = null,
+    val humor: String? = null,
+    val descricao: String? = null,
 
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
-        parcel.writeString(id)
-        parcel.writeInt(data.size)
-        data.forEach { (key, value) ->
-            parcel.writeString(key)
-            parcel.writeValue(value)
-        }
-        parcel.writeString(humor)
-        parcel.writeString(descricao)
-    }
+    // Timestamp é a fonte da verdade agora. Padrão 0L ajuda na migração.
+    val timestamp: Long = 0L,
 
-    override fun describeContents(): Int = 0
-
-    companion object CREATOR : Parcelable.Creator<HumorNote> {
-        override fun createFromParcel(parcel: Parcel): HumorNote {
-            return HumorNote(parcel)
-        }
-
-        override fun newArray(size: Int): Array<HumorNote?> {
-            return arrayOfNulls(size)
-        }
-    }
-
-    // Adiciona a anotação @get:Exclude para garantir que o RTDB ignore esta propriedade calculada
-    @get:Exclude
-    val timestamp: Long
-        get() = data["time"] as? Long ?: 0L
-}
+    // Campo legado: Usado APENAS para ler dados antigos.
+    // @RawValue permite que o Parcelize ignore o tipo genérico Any.
+    val data: Map<String, @RawValue Any>? = null
+) : Parcelable

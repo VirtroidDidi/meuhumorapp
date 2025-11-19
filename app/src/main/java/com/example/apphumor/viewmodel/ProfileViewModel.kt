@@ -1,8 +1,11 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/ProfileViewModel.kt
+
 package com.example.apphumor.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider // NOVO: Para a Factory
 import androidx.lifecycle.viewModelScope // Importante para Coroutines
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
@@ -13,12 +16,15 @@ import kotlinx.coroutines.launch // Importante para Coroutines
  * [ProfileViewModel]
  * Gerencia o estado e as operações do perfil do usuário.
  * Atualizado para usar Kotlin Coroutines com o DatabaseRepository.
+ * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
  */
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    // Dependências injetadas
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
+) : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
-    // Inicializa o repositório
-    private val dbRepository = DatabaseRepository()
+    // REMOVIDAS: Inicializações internas de auth e dbRepository
 
     // Expondo a autenticação APENAS para uso interno no Fragment
     val firebaseAuthInstance: FirebaseAuth
@@ -92,6 +98,7 @@ class ProfileViewModel : ViewModel() {
             return
         }
 
+        // Usa copy para criar uma nova instância (necessário com Data Classes imutáveis)
         val updatedUser = currentUser.copy(
             nome = newName,
             idade = newAge
@@ -130,5 +137,22 @@ class ProfileViewModel : ViewModel() {
 
     fun clearLogoutEvent() {
         _logoutEvent.value = false
+    }
+}
+
+/**
+ * Factory personalizada para instanciar ProfileViewModel com as dependências necessárias.
+ */
+class ProfileViewModelFactory(
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProfileViewModel(auth, dbRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

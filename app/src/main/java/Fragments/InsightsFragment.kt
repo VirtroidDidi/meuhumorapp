@@ -1,3 +1,5 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/InsightsFragment.kt
+
 package com.example.apphumor
 
 import android.os.Bundle
@@ -11,8 +13,10 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.apphumor.databinding.FragmentInsightsBinding
+import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.Insight
 import com.example.apphumor.viewmodel.InsightsViewModel
+import com.example.apphumor.viewmodel.InsightsViewModelFactory // NOVO: Importa a Factory
 
 /**
  * [InsightsFragment]
@@ -23,8 +27,8 @@ class InsightsFragment : Fragment() {
     private var _binding: FragmentInsightsBinding? = null
     private val binding get() = _binding!!
 
-    // Inicializa o ViewModel
-    private val viewModel: InsightsViewModel by lazy { ViewModelProvider(this).get(InsightsViewModel::class.java) }
+    // PROPRIEDADE CORRIGIDA: Usa lateinit var para ser inicializada no onViewCreated
+    private lateinit var viewModel: InsightsViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,6 +40,16 @@ class InsightsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // 1. INICIALIZAÇÃO CORRETA DO VIEWMODEL COM FACTORY
+        viewModel = ViewModelProvider(
+            this,
+            InsightsViewModelFactory(
+                DependencyProvider.auth,                // Obtém a dependência centralizada
+                DependencyProvider.databaseRepository   // Obtém a dependência centralizada
+            )
+        ).get(InsightsViewModel::class.java)
+        // -------------------------------------------------------------
 
         setupObservers()
     }

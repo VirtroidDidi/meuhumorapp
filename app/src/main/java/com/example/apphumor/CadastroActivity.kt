@@ -1,3 +1,5 @@
+// ARQUIVO: app/src/main/java/com/example/apphumor/CadastroActivity.kt
+
 package com.example.apphumor
 
 import android.content.Intent
@@ -7,7 +9,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 import com.example.apphumor.databinding.ActivityCadastroBinding
+import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.viewmodel.CadastroViewModel
+import com.example.apphumor.viewmodel.CadastroViewModelFactory // NOVO: Import da Factory
 import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
 
@@ -29,8 +33,17 @@ class CadastroActivity : AppCompatActivity() {
         Log.d(TAG, "Activity iniciada.")
 
         // Inicialização de dependências
-        auth = FirebaseAuth.getInstance()
-        viewModel = ViewModelProvider(this).get(CadastroViewModel::class.java)
+        // CORREÇÃO: Usando o DependencyProvider para obter as instâncias
+        auth = DependencyProvider.auth
+
+        // NOVO: Inicialização do ViewModel usando a Factory
+        viewModel = ViewModelProvider(
+            this,
+            CadastroViewModelFactory(
+                DependencyProvider.auth,
+                DependencyProvider.databaseRepository
+            )
+        ).get(CadastroViewModel::class.java)
 
         // Configurando o NumberPicker
         binding.numberPickerIdade.minValue = 13
