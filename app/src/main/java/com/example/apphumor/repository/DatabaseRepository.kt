@@ -22,7 +22,6 @@ class DatabaseRepository {
     }
 
     // --- Notas de Humor (Coroutines) ---
-    // Usado pelo AddHumorViewModel
 
     suspend fun updateHumorNote(userId: String, note: HumorNote): Result<Unit> {
         return try {
@@ -48,8 +47,7 @@ class DatabaseRepository {
         }
     }
 
-    // --- Notas de Humor (LiveData) ---
-    // CRÍTICO: Usado pelo HomeViewModel, HistoryFragment e InsightsViewModel
+    // --- Notas de Humor (LiveData - Mantido para Realtime) ---
 
     fun getHumorNotesAsLiveData(userId: String): LiveData<List<HumorNote>> {
         val liveData = MutableLiveData<List<HumorNote>>()
@@ -72,11 +70,7 @@ class DatabaseRepository {
     }
 
     // --- Usuário (Coroutines) ---
-    // Usado pelo CadastroViewModel e ProfileViewModel
 
-    /**
-     * Salva um novo usuário no banco de dados.
-     */
     suspend fun saveUser(user: User): Result<Unit> {
         if (user.uid == null) return Result.Error(Exception("UID nulo"))
 
@@ -100,7 +94,6 @@ class DatabaseRepository {
                 "idade" to user.idade,
                 "email" to user.email
             )
-
             db.child(user.uid!!).updateChildren(updates).await()
             Result.Success(Unit)
         } catch (e: Exception) {

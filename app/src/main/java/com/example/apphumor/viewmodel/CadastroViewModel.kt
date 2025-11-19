@@ -13,17 +13,12 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * [CadastroViewModel]
- * Gerencia o cadastro de novos usuários usando Coroutines para operações assíncronas.
- */
 class CadastroViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
     private val dbRepository = DatabaseRepository()
     private val TAG = "CadastroViewModel"
 
-    // Estados observáveis (LiveData)
     private val _cadastroSuccess = MutableLiveData<Boolean>()
     val cadastroSuccess: LiveData<Boolean> = _cadastroSuccess
 
@@ -33,33 +28,24 @@ class CadastroViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    /**
-     * Realiza o registro do usuário:
-     * 1. Valida dados
-     * 2. Cria conta no Firebase Auth
-     * 3. Salva dados no Realtime Database
-     */
     fun registerUser(nome: String, email: String, senha: String, idade: Int) {
         _isLoading.value = true
 
-        // 1. Validação
         if (nome.isBlank() || email.isBlank() || senha.isBlank() || senha.length < 6) {
-            _errorMessage.value = "Dados inválidos. Verifique se todos os campos estão preenchidos corretamente."
+            _errorMessage.value = "Dados inválidos. Verifique todos os campos."
             _isLoading.value = false
             return
         }
 
-        // 2. Processo Assíncrono com Coroutines
         viewModelScope.launch {
             try {
-                // Await suspende a execução até que o Auth responda, sem bloquear a thread principal
                 val authResult = auth.createUserWithEmailAndPassword(email, senha).await()
                 val firebaseUser = authResult.user
 
                 if (firebaseUser?.uid != null) {
                     val user = User(firebaseUser.uid, nome, email, idade)
 
-                    // Chama o repositório (agora também uma função suspend)
+                    // Chama a nova função suspend do repositório
                     val saveResult = dbRepository.saveUser(user)
 
                     _isLoading.value = false
@@ -67,8 +53,7 @@ class CadastroViewModel : ViewModel() {
                     if (saveResult is DatabaseRepository.Result.Success) {
                         _cadastroSuccess.value = true
                     } else {
-                        _errorMessage.value = "Conta criada, mas falha ao salvar perfil. Contate o suporte."
-                        // Nota: Em um cenário real, você poderia tentar deletar o auth user ou tentar salvar novamente.
+                        _errorMessage.value = "Conta criada, mas falha ao salvar perfil."
                     }
                 } else {
                     _isLoading.value = false
@@ -77,10 +62,9 @@ class CadastroViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 _isLoading.value = false
-                // Tratamento de erros específicos do Firebase Auth
                 when (e) {
                     is FirebaseAuthWeakPasswordException ->
-                        _errorMessage.value = "A senha é muito fraca. Use pelo menos 6 caracteres."
+                        _errorMessage.value = "A senha é muito fraca."
                     is FirebaseAuthInvalidCredentialsException ->
                         _errorMessage.value = "E-mail inválido ou já em uso."
                     else -> {
