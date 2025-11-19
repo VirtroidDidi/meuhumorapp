@@ -41,6 +41,19 @@ android {
 
 dependencies {
 
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
+    // Coroutines para Firebase (tasks.await)
+    implementation(libs.kotlinx.coroutines.play.services)
+
+    // Ciclo de vida e ViewModel Scope (versão mais recente que a sua atual)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+
+    // Se o seu targetSdk for 33 ou mais, você pode precisar disto:
+    implementation(libs.androidx.activity.ktx.v181)
+
+
 
 
     // Firebase BoM (Bill of Materials)

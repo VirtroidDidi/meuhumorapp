@@ -5,17 +5,20 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope // NOVO: Para coletar o StateFlow
 import com.example.apphumor.databinding.ActivityAddHumorBinding
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.viewmodel.AddHumorViewModel
+import com.example.apphumor.viewmodel.SaveState // NOVO: Import do sealed class de estado
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch // NOVO: Para Coroutines
 
 class AddHumorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHumorBinding
     private lateinit var viewModel: AddHumorViewModel
     private var selectedHumor: String? = null
-    private var existingNote: HumorNote? = null // Nova propriedade para armazenar a nota existente
+    private var existingNote: HumorNote? = null // Nota existente se estivermos editando
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,10 +31,12 @@ class AddHumorActivity : AppCompatActivity() {
 
         setupHumorButtons()
         setupSaveButton()
-        loadExistingNote() // Carregar dados da nota existente se houver
+        loadExistingNote()
+        setupSaveStatusObserver() // NOVO: Observa o StateFlow
     }
 
     private fun setupHumorButtons() {
+        // ... (lógica existente, sem alterações necessárias)
         listOf(
             binding.btnCalm,
             binding.btnEnergetic,
@@ -52,10 +57,9 @@ class AddHumorActivity : AppCompatActivity() {
         }
     }
 
-    // Novo método para carregar dados da nota existente
     private fun loadExistingNote() {
+        // ... (lógica existente, sem alterações necessárias)
         existingNote?.let { note ->
-            // Selecionar o humor correspondente
             val buttonId = when (note.humor) {
                 "Calm" -> R.id.btn_calm
                 "Energetic" -> R.id.btn_energetic
@@ -63,10 +67,13 @@ class AddHumorActivity : AppCompatActivity() {
                 "Angry" -> R.id.btn_angry
                 else -> R.id.btn_neutral
             }
-            findViewById<MaterialButton>(buttonId)?.performClick()
+            // Verifica se o ID existe antes de chamar findViewById
+            if (buttonId != R.id.btn_neutral || note.humor == "Neutral") {
+                findViewById<MaterialButton>(buttonId)?.performClick()
+            }
 
-            // Preencher descrição
             binding.etNotes.setText(note.descricao)
+            binding.tvTitle.text = "Editar Registro" // Atualiza o título
         }
     }
 
@@ -88,23 +95,21 @@ class AddHumorActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            if (user == null) {
+                showToast("Usuário não autenticado. Tente logar novamente.")
+                return@setOnClickListener
+            }
+
             val note = createHumorNote(humor)
 
-            user?.uid?.let { userId ->
-                if (existingNote != null) {
-                    // Atualizar nota existente
-                    viewModel.updateHumorNote(userId, note, ::handleSaveSuccess, ::handleSaveError)
-                } else {
-                    // Criar nova nota
-                    viewModel.saveHumorNote(userId, note, ::handleSaveSuccess, ::handleSaveError)
-                }
-            }
+            // CHAMA O NOVO MÉTODO DO VIEWMODEL
+            viewModel.saveOrUpdateHumorNote(note, existingNote != null)
         }
     }
 
     private fun createHumorNote(humor: String): HumorNote {
         return existingNote?.copy(
-            // Manter o timestamp original
+            // Mantém o ID e o timestamp original
             humor = humor,
             descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() }
         ) ?: HumorNote( // Criar nova nota se não existir
@@ -114,15 +119,45 @@ class AddHumorActivity : AppCompatActivity() {
         )
     }
 
-    private fun handleSaveSuccess() {
-        setResult(Activity.RESULT_OK)
-        finish()
-        showToast(if (existingNote != null) "Registro atualizado!" else "Registro salvo!")
+    /**
+     * NOVO: Configura a observação do StateFlow para reagir ao estado de salvamento.
+     */
+    private fun setupSaveStatusObserver() {
+        // Coleta o StateFlow no escopo da Activity (lifecycleScope)
+        lifecycleScope.launch {
+            viewModel.saveStatus.collect { state ->
+                when (state) {
+                    is SaveState.Idle -> {
+                        // Estado inicial
+                        binding.btnSave.isEnabled = true
+                        binding.btnSave.text = if (existingNote != null) "Salvar Alterações" else "Salvar Registro"
+                    }
+                    is SaveState.Loading -> {
+                        // Desabilita o botão e mostra carregamento
+                        binding.btnSave.isEnabled = false
+                        binding.btnSave.text = "Salvando..."
+                        // Aqui você adicionaria uma ProgressBar se o layout tivesse uma.
+                    }
+                    is SaveState.Success -> {
+                        // Operação concluída com sucesso
+                        val message = if (existingNote != null) "Registro atualizado!" else "Registro salvo!"
+                        showToast(message)
+                        setResult(Activity.RESULT_OK)
+                        finish()
+                        viewModel.resetSaveStatus() // Reseta o estado
+                    }
+                    is SaveState.Error -> {
+                        // Trata o erro
+                        showToast(state.message)
+                        binding.btnSave.isEnabled = true
+                        viewModel.resetSaveStatus() // Reseta o estado
+                    }
+                }
+            }
+        }
     }
 
-    private fun handleSaveError(error: String) {
-        showToast(error)
-    }
+    // REMOVIDOS: handleSaveSuccess e handleSaveError (substituídos pelo StateFlow)
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
