@@ -1,6 +1,8 @@
 package com.example.apphumor.repository
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData // NOVO
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.User
 import com.google.firebase.database.DataSnapshot
@@ -38,11 +40,14 @@ class DatabaseRepository {
             }
     }
 
+    /**
+     * MANTIDO: Método antigo com callback (usado por AddHumorViewModel e outros).
+     */
     fun getHumorNotes(userId: String, callback: (List<HumorNote>) -> Unit) {
+        // ... (código existente)
         db.child(userId).child("notes").addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val notes = snapshot.children.mapNotNull {
-                    // Garante que o ID da chave do nó é atribuído ao objeto
                     it.getValue(HumorNote::class.java)?.copy(id = it.key)
                 }
                 callback(notes)
@@ -55,6 +60,31 @@ class DatabaseRepository {
         })
     }
 
+    /**
+     * NOVO: Método para retornar notas como LiveData.
+     * Isso permite que os ViewModels observem o banco de dados em tempo real.
+     */
+    fun getHumorNotesAsLiveData(userId: String): LiveData<List<HumorNote>> {
+        val liveData = MutableLiveData<List<HumorNote>>()
+
+        db.child(userId).child("notes").addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val notes = snapshot.children.mapNotNull {
+                    it.getValue(HumorNote::class.java)?.copy(id = it.key)
+                }
+                liveData.postValue(notes)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Erro ao buscar notas via LiveData: ${error.message}")
+                liveData.postValue(emptyList())
+            }
+        })
+
+        return liveData
+    }
+
+
     fun saveUser(user: User) {
         db.child(user.uid!!).setValue(user)
             .addOnFailureListener { e ->
@@ -63,11 +93,8 @@ class DatabaseRepository {
     }
 
     /**
-     * CORREÇÃO CRÍTICA: Atualiza o perfil do usuário no Firebase Realtime Database
+     * Atualiza o perfil do usuário no Firebase Realtime Database
      * usando updateChildren para PRESERVAR a coleção 'notes'.
-     * @param user O objeto User com os dados atualizados.
-     * @param onSuccess Callback para sucesso.
-     * @param onError Callback para erro.
      */
     fun updateUser(user: User, onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (user.uid == null) {
@@ -75,16 +102,11 @@ class DatabaseRepository {
             return
         }
 
-        // Criamos um mapa apenas com os campos que queremos ATUALIZAR.
-        // Isso evita que o setValue apague sub-nós como "notes".
         val updates = mutableMapOf<String, Any?>()
         updates["nome"] = user.nome
         updates["idade"] = user.idade
-        // O email não é atualizado, pois é uma chave de autenticação, mas o colocamos
-        // aqui para garantir que ele esteja no nó principal.
         updates["email"] = user.email
 
-        // Usa updateChildren para mesclar os novos dados com os existentes.
         db.child(user.uid!!).updateChildren(updates)
             .addOnSuccessListener {
                 Log.d(TAG, "Usuário ${user.uid} atualizado com sucesso (updateChildren).")
@@ -98,9 +120,7 @@ class DatabaseRepository {
     }
 
     fun getUser(userId: String, callback: (User?) -> Unit) {
-
         db.child(userId).get().addOnSuccessListener { snapshot ->
-            // A desserialização funciona automaticamente com o get()
             val user = snapshot.getValue(User::class.java)
             callback(user)
         }.addOnFailureListener { exception ->
