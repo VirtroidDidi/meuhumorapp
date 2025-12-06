@@ -8,6 +8,20 @@ import com.example.apphumor.databinding.ActivityMainBinding
 import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
 
+// ===================================
+// NOVOS IMPORTS
+// ===================================
+import android.view.View
+import android.animation.LayoutTransition
+import androidx.core.content.ContextCompat
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import android.os.Handler
+import android.os.Looper
+// ===================================
+
 // CORREÇÃO: A classe agora implementa a interface FragmentTelaB.LogoutListener
 class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
 
@@ -19,10 +33,22 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     private var activeFragment: Fragment? = null
     //private val TAG = "MainActivity"
 
+    // ===================================
+    // NOVAS VARIÁVEIS DE CONEXÃO
+    // ===================================
+    private val handler = Handler(Looper.getMainLooper())
+    private var isConnected = false
+    // ===================================
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate( layoutInflater )
         setContentView(binding. root )
+
+        // ===================================
+        // NOVO: Habilita animação suave de layout
+        // ===================================
+        binding.root.layoutTransition = LayoutTransition()
 
         auth = FirebaseAuth.getInstance()
 
@@ -32,6 +58,11 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         }
 
         setupNavigationButtons()
+
+        // ===================================
+        // NOVO: Iniciar monitoramento de conexão
+        // ===================================
+        setupConnectionMonitor()
         // O botão de Logout foi removido do XML, então a função setupLogoutButton() foi removida.
     }
 
@@ -89,8 +120,57 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         activeFragment = fragment
     }
 
+    // ===================================
+    // NOVAS FUNÇÕES DE MONITORAMENTO DE CONEXÃO
+    // ===================================
+    private fun setupConnectionMonitor() {
+        // Referência especial do Firebase para saber o estado da conexão
+        val connectedRef = FirebaseDatabase.getInstance().getReference(".info/connected")
+
+        connectedRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val connected = snapshot.getValue(Boolean::class.java) ?: false
+                isConnected = connected
+
+                // Usamos o Handler para evitar updates de UI muito rápidos (flickering)
+                handler.post { updateConnectionUI(connected) }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                // Não é crítico tratar erro de listener de .info
+            }
+        })
+    }
+
+    private fun updateConnectionUI(isConnected: Boolean) {
+        if (isConnected) {
+            // Se voltou a conexão, esconde o banner
+            binding.cvConnectionStatus.visibility = View.GONE
+        } else {
+            // Se caiu, mostra o banner e ajusta cores/texto
+            binding.cvConnectionStatus.visibility = View.VISIBLE
+            binding.cvConnectionStatus.setCardBackgroundColor(
+                ContextCompat.getColor(this, R.color.status_offline_bg)
+            )
+            binding.tvStatusText.text = "Você está offline. Alterações salvas localmente."
+            binding.ivStatusIcon.setImageResource(R.drawable.ic_cloud_off_24)
+            // Os atributos de cor do texto e do ícone já foram definidos no XML,
+            // mas é bom garantir que estejam corretos aqui, se necessário:
+            // binding.tvStatusText.setTextColor(ContextCompat.getColor(this, R.color.status_offline_text))
+            // binding.ivStatusIcon.setColorFilter(ContextCompat.getColor(this, R.color.status_offline_text))
+        }
+    }
+
     /**
-     * Implementação do método da interface FragmentTelaB.LogoutLxx istener.
+     * Método público para outras Activities/Fragments saberem o status (usado na Tarefa 2.4)
+     */
+    fun isNetworkConnected(): Boolean {
+        return isConnected
+    }
+    // ===================================
+
+    /**
+     * Implementação do método da interface FragmentTelaB.LogoutListener.
      * Este código é executado quando o usuário clica em "Sair da Conta" no FragmentTelaB.
      */
     override fun onLogoutSuccess() {

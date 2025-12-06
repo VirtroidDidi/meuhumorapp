@@ -3,6 +3,10 @@
 package com.example.apphumor
 
 import android.app.Activity
+// ===============================================
+// NOVO IMPORT NECESSÁRIO PARA CONECTIVITY_SERVICE
+// ===============================================
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -137,11 +141,25 @@ class AddHumorActivity : AppCompatActivity() {
                         binding.btnSave.text = "Salvando..."
                     }
                     is SaveState.Success -> {
+                        // ===============================================
+                        // 🟡 TAREFA 2.4: Feedback de Gravação Offline
+                        // ===============================================
+                        // Verifica conexão simples para feedback visual
+                        val isOffline = !isInternetAvailable()
+
                         val message = if (existingNote != null) "Registro atualizado!" else "Registro salvo!"
-                        showToast(message)
+
+                        if (isOffline) {
+                            // Feedback específico se o dispositivo está offline
+                            showToast("$message (Salvo no dispositivo)")
+                        } else {
+                            showToast(message)
+                        }
+
                         setResult(Activity.RESULT_OK)
                         finish()
                         viewModel.resetSaveStatus()
+                        // ===============================================
                     }
                     is SaveState.Error -> {
                         showToast(state.message)
@@ -156,4 +174,18 @@ class AddHumorActivity : AppCompatActivity() {
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
+
+    // ===============================================
+    // 🟡 TAREFA 2.4: Função utilitária para checagem de rede
+    // ===============================================
+    private fun isInternetAvailable(): Boolean {
+        // Checagem básica via ConnectivityManager
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        // A partir do API 29 (Android 10), métodos mais novos são preferidos,
+        // mas activeNetworkInfo ainda é amplamente usado para compatibilidade.
+        @Suppress("DEPRECATION")
+        val activeNetwork = cm.activeNetworkInfo
+        return activeNetwork != null && activeNetwork.isConnected
+    }
+    // ===============================================
 }

@@ -37,4 +37,9 @@
     <color name="insight_angry_bg">#F44336</color>
 
 
+        <color name="status_offline_bg">#424242</color>
+        <color name="status_offline_text">#FFFFFF</color>
+        <color name="status_syncing_bg">#FFB300</color>
+
+
 </resources>

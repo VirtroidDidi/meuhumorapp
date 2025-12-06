@@ -45,7 +45,7 @@ class InsightsFragment : Fragment() {
         viewModel = ViewModelProvider(
             this,
             InsightsViewModelFactory(
-                DependencyProvider.auth,                // Obtém a dependência centralizada
+                    DependencyProvider.auth,                // Obtém a dependência centralizada
                 DependencyProvider.databaseRepository   // Obtém a dependência centralizada
             )
         ).get(InsightsViewModel::class.java)
