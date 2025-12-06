@@ -120,16 +120,18 @@ class DatabaseRepository {
     }
 
     suspend fun updateUser(user: User): Result<Unit> {
-        // CORREÇÃO: Variável local segura 'uid'
         val uid = user.uid ?: return Result.Error(IllegalArgumentException("UID nulo."))
 
         return try {
             val updates = mapOf<String, Any?>(
                 "nome" to user.nome,
                 "idade" to user.idade,
-                "email" to user.email
+                "email" to user.email,
+                // --- NOVOS CAMPOS ADICIONADOS ---
+                "notificacaoAtiva" to user.notificacaoAtiva,
+                "horarioNotificacao" to user.horarioNotificacao
             )
-            // Usando a variável local 'uid'
+
             db.child(uid).updateChildren(updates).await()
             Result.Success(Unit)
         } catch (e: Exception) {

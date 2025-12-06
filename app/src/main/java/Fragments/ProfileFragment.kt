@@ -176,6 +176,9 @@ class ProfileFragment : Fragment() {
         binding.etUserName.setText(user.nome)
         binding.etUserIdade.setText(user.idade?.toString())
 
+        val nomeExibicao = if (!user.nome.isNullOrEmpty()) user.nome else "Usuário"
+        binding.tvWelcomeMessage.text = "Bem-vindo(a), $nomeExibicao!"
+
         // ===========================================
         // CARREGAR DADOS DE NOTIFICAÇÃO E INICIALIZAR VARIAVEIS TEMPORÁRIAS
         // ===========================================
