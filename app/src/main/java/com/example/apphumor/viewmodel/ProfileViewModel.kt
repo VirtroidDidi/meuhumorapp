@@ -5,26 +5,23 @@ package com.example.apphumor.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider // NOVO: Para a Factory
-import androidx.lifecycle.viewModelScope // Importante para Coroutines
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch // Importante para Coroutines
+import kotlinx.coroutines.launch
 
 /**
  * [ProfileViewModel]
  * Gerencia o estado e as operações do perfil do usuário.
  * Atualizado para usar Kotlin Coroutines com o DatabaseRepository.
- * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
  */
 class ProfileViewModel(
     // Dependências injetadas
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
 ) : ViewModel() {
-
-    // REMOVIDAS: Inicializações internas de auth e dbRepository
 
     // Expondo a autenticação APENAS para uso interno no Fragment
     val firebaseAuthInstance: FirebaseAuth
@@ -124,6 +121,40 @@ class ProfileViewModel(
             }
         }
     }
+
+    // ====================================================================
+    // 🔔 NOVO: Função para atualizar especificamente as preferências de notificação
+    // ====================================================================
+    fun updateNotificationPreferences(isEnabled: Boolean, newTime: String) {
+        val currentUser = _userProfile.value
+        val userId = auth.currentUser?.uid
+
+        if (userId == null || currentUser == null) {
+            _updateStatus.value = "Erro: Utilizador não autenticado ou dados ausentes."
+            return
+        }
+
+        // Cria uma cópia do usuário com as novas configurações
+        // A data class User precisa ter os campos 'notificacaoAtiva' e 'horarioNotificacao'
+        val updatedUser = currentUser.copy(
+            notificacaoAtiva = isEnabled,
+            horarioNotificacao = newTime
+        )
+
+        viewModelScope.launch {
+            // Salva no Firebase
+            val result = dbRepository.updateUser(updatedUser)
+
+            if (result is DatabaseRepository.Result.Success) {
+                // Atualiza o LiveData local para refletir na UI imediatamente
+                _userProfile.value = updatedUser
+                _updateStatus.postValue("Preferências de lembrete salvas.") // Usando postValue por segurança em Coroutine
+            } else {
+                _updateStatus.postValue("Erro ao salvar preferências.")
+            }
+        }
+    }
+    // ====================================================================
 
 
     fun logout() {

@@ -19,7 +19,10 @@ data class User(
 
     val nome: String? = null,
     val email: String? = null,
-    val idade: Int? = null
+    val idade: Int? = null,
+
+    val notificacaoAtiva: Boolean = true, // Padrão ativado
+    val horarioNotificacao: String = "20:00" // Padrão 20h
 )
 
 /**

@@ -146,4 +146,20 @@ class DatabaseRepository {
             Result.Error(e)
         }
     }
+    // Adicionar dentro da classe DatabaseRepository
+
+    suspend fun getHumorNotesOnce(userId: String): List<HumorNote> {
+        return try {
+            // .get() faz uma leitura única (One-Shot)
+            val snapshot = db.child(userId).child("notes").get().await()
+
+            snapshot.children.mapNotNull { child ->
+                val rawNote = child.getValue(HumorNote::class.java)
+                rawNote?.copy(id = child.key) // Garante que o ID venha junto
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro na leitura one-shot: ${e.message}")
+            emptyList()
+        }
+    }
 }

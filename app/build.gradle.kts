@@ -42,6 +42,9 @@ android {
 
 dependencies {
 
+    // WorkManager (Para agendamento de tarefas em background)
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 

@@ -1,169 +1,162 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/InsightsViewModel.kt
-
 package com.example.apphumor.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.switchMap
+import androidx.lifecycle.*
 import com.example.apphumor.R
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.Insight
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
 import java.util.*
 
-/**
- * [InsightsViewModel]
- * Responsável por buscar as notas de humor, calcular e expor os insights prontos para a UI.
- */
+// --- AQUI ESTÁ A DEFINIÇÃO OFICIAL DO TIMERANGE ---
+enum class TimeRange {
+    LAST_7_DAYS,
+    LAST_30_DAYS,
+    CURRENT_MONTH
+}
+
 class InsightsViewModel(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
-    companion object {
-        private const val TAG = "InsightsViewModel"
-    }
-
-    // LiveData usado como gatilho para a busca/cálculo
+    // 1. Inputs
     private val userIdLiveData = MutableLiveData<String?>()
+    private val _timeRange = MutableLiveData<TimeRange>(TimeRange.CURRENT_MONTH)
 
-    // LiveData que busca as notas em tempo real do Repositório
-    private val allNotesLiveData: LiveData<List<HumorNote>> = userIdLiveData.switchMap { userId ->
-        if (userId.isNullOrBlank()) {
-            MutableLiveData(emptyList())
-        } else {
-            dbRepository.getHumorNotesAsLiveData(userId)
-        }
-    }
-
-    /**
-     * LiveData que transforma a lista bruta de notas nos Insights prontos para a UI.
-     */
-    val insights: LiveData<List<Insight>> = allNotesLiveData.switchMap { notes ->
-        val result = MutableLiveData<List<Insight>>()
-        result.value = calculateInsights(notes)
-        result
-    }
-
-    // LiveData opcional para indicar estado de carregamento
+    // 2. Estado de Carregamento
     private val _loading = MutableLiveData<Boolean>()
     val loading: LiveData<Boolean> = _loading
 
-
-    init {
-        // Inicia o processo de busca
-        val userId = auth.currentUser?.uid
-        userIdLiveData.value = userId
+    // 3. Fonte de Dados
+    private val allNotesLiveData: LiveData<List<HumorNote>> = userIdLiveData.switchMap { userId ->
+        _loading.value = true
+        if (userId.isNullOrBlank()) {
+            _loading.value = false
+            MutableLiveData(emptyList())
+        } else {
+            val source = dbRepository.getHumorNotesAsLiveData(userId)
+            source.map {
+                _loading.value = false
+                it
+            }
+        }
     }
 
-    /**
-     * Lógica principal de cálculo dos insights a partir das notas de humor (Filtrando por Mês).
-     */
-    private fun calculateInsights(notes: List<HumorNote>): List<Insight> {
+    // 4. Output
+    val insights = MediatorLiveData<List<Insight>>().apply {
+        addSource(allNotesLiveData) { notes ->
+            value = calculateInsights(notes, _timeRange.value ?: TimeRange.CURRENT_MONTH)
+        }
+        addSource(_timeRange) { range ->
+            value = calculateInsights(allNotesLiveData.value ?: emptyList(), range)
+        }
+    }
+
+    init {
+        userIdLiveData.value = auth.currentUser?.uid
+    }
+
+    fun setTimeRange(range: TimeRange) {
+        _timeRange.value = range
+    }
+
+    private fun calculateInsights(notes: List<HumorNote>, range: TimeRange): List<Insight> {
         if (notes.isEmpty()) return emptyList()
 
-        // PASSO 1: Filtra as notas apenas para o MÊS ATUAL
-        val currentCalendar = Calendar.getInstance()
-        val currentMonth = currentCalendar.get(Calendar.MONTH)
-        val currentYear = currentCalendar.get(Calendar.YEAR)
+        val calendar = Calendar.getInstance()
+        val endTime = calendar.timeInMillis
 
-        val notesCurrentMonth = notes.filter { note ->
-            val noteCalendar = Calendar.getInstance().apply {
-                // CORREÇÃO CRÍTICA: Acessando 'timestamp' diretamente
-                timeInMillis = note.timestamp
+        val startTime = when (range) {
+            TimeRange.LAST_7_DAYS -> {
+                val c = Calendar.getInstance()
+                c.add(Calendar.DAY_OF_YEAR, -7)
+                c.timeInMillis
             }
-            noteCalendar.get(Calendar.MONTH) == currentMonth &&
-                    noteCalendar.get(Calendar.YEAR) == currentYear
+            TimeRange.LAST_30_DAYS -> {
+                val c = Calendar.getInstance()
+                c.add(Calendar.DAY_OF_YEAR, -30)
+                c.timeInMillis
+            }
+            TimeRange.CURRENT_MONTH -> {
+                val c = Calendar.getInstance()
+                c.set(Calendar.DAY_OF_MONTH, 1)
+                c.set(Calendar.HOUR_OF_DAY, 0)
+                c.set(Calendar.MINUTE, 0)
+                c.set(Calendar.SECOND, 0)
+                c.timeInMillis
+            }
         }
 
-        if (notesCurrentMonth.isEmpty()) {
-            return getEmptyMonthInsights()
-        }
+        val filteredNotes = notes.filter { it.timestamp in startTime..endTime }
 
-        val totalNotesInMonth = notesCurrentMonth.size
+        if (filteredNotes.isEmpty()) return listOf(createEmptyInsight("Nenhum registro no período."))
 
-        // Agrupa e conta a frequência de humores APENAS para o mês atual
-        val humorCounts = notesCurrentMonth
+        val totalNotes = filteredNotes.size
+
+        val humorCounts = filteredNotes
             .filter { it.humor != null }
             .groupingBy { it.humor!!.lowercase(Locale.ROOT) }
             .eachCount()
 
+        val mostCommonEntry = humorCounts.maxByOrNull { it.value }
+        val mostCommonHumor = mostCommonEntry?.key?.replaceFirstChar { it.titlecase() } ?: "Neutro"
+        val (iconCommon, bgCommon) = getIconAndColorForHumor(mostCommonHumor)
 
-        // 1. Humor Mais Comum
-        val mostCommonHumorEntry = humorCounts.maxByOrNull { it.value }
-        val mostCommonHumor = mostCommonHumorEntry?.key?.replaceFirstChar { it.titlecase(Locale.ROOT) } ?: "Neutro"
-        val countCommon = mostCommonHumorEntry?.value ?: 0
-        val humorIconCommon = getIconAndColorForHumor(mostCommonHumor)
+        val bestDay = calculateBestDay(filteredNotes)
 
-        val humorInsight = Insight(
-            rotulo = "Humor Mais Comum (Mês)",
-            valor = "$mostCommonHumor ($countCommon notas)",
-            iconResId = humorIconCommon.first,
-            backgroundColorResId = humorIconCommon.second
+        return listOf(
+            Insight(
+                rotulo = "Humor Predominante",
+                valor = mostCommonHumor,
+                iconResId = iconCommon,
+                backgroundColorResId = bgCommon
+            ),
+            Insight(
+                rotulo = "Total de Registros",
+                valor = "$totalNotes notas",
+                iconResId = R.drawable.ic_active_days_24, // Use ic_launcher_foreground se não tiver este ícone
+                backgroundColorResId = R.color.insight_neutral_bg
+            ),
+            Insight(
+                rotulo = "Melhor Dia",
+                valor = bestDay,
+                iconResId = R.drawable.ic_energetic_24, // Use ic_launcher_foreground se não tiver este ícone
+                backgroundColorResId = R.color.insight_energetic_bg
+            )
         )
-
-        // 2. Dias de Registros Ativos (Total de Notas do Mês)
-        val activeDaysInsight = Insight(
-            rotulo = "Notas Registradas (Mês)",
-            valor = "$totalNotesInMonth registros",
-            iconResId = R.drawable.ic_active_days_24,
-            backgroundColorResId = R.color.insight_calm_bg
-        )
-
-        // 3. Humor Menos Comum
-        val leastCommonHumorEntry = humorCounts.minByOrNull { it.value }
-        val leastCommonHumor = leastCommonHumorEntry?.key?.replaceFirstChar { it.titlecase(Locale.ROOT) } ?: "N/A"
-        val countLeastCommon = leastCommonHumorEntry?.value ?: 0
-        val humorIconLeastCommon = getIconAndColorForHumor(leastCommonHumor)
-
-        val humorLeastCommonInsight = Insight(
-            rotulo = "Humor Menos Comum (Mês)",
-            valor = "$leastCommonHumor ($countLeastCommon notas)",
-            iconResId = humorIconLeastCommon.first,
-            backgroundColorResId = R.color.insight_angry_bg
-        )
-
-        return listOf(humorInsight, activeDaysInsight, humorLeastCommonInsight)
     }
 
-    // Funções de Suporte (Movidas do Fragment)
+    private fun calculateBestDay(notes: List<HumorNote>): String {
+        val positiveHumors = listOf("calm", "energetic", "feliz", "happy", "calmo", "energético")
+        val dayCounts = notes
+            .filter { (it.humor?.lowercase() ?: "") in positiveHumors }
+            .groupingBy {
+                val c = Calendar.getInstance()
+                c.timeInMillis = it.timestamp
+                SimpleDateFormat("EEEE", Locale("pt", "BR")).format(c.time)
+                    .replaceFirstChar { char -> char.titlecase() }
+                    .split("-")[0]
+            }
+            .eachCount()
+        return dayCounts.maxByOrNull { it.value }?.key ?: "N/A"
+    }
+
     private fun getIconAndColorForHumor(humorType: String): Pair<Int, Int> {
         return when (humorType.lowercase(Locale.ROOT)) {
-            "calmo" -> Pair(R.drawable.ic_calm_24, R.color.insight_calm_bg)
-            "energetico" -> Pair(R.drawable.ic_energetic_24, R.color.insight_energetic_bg)
-            "triste" -> Pair(R.drawable.ic_sad_24, R.color.insight_sad_bg)
-            "irritado" -> Pair(R.drawable.ic_angry_24, R.color.insight_angry_bg)
+            "calm", "calmo" -> Pair(R.drawable.ic_calm_24, R.color.insight_calm_bg)
+            "energetic", "energético" -> Pair(R.drawable.ic_energetic_24, R.color.insight_energetic_bg)
+            "sad", "triste" -> Pair(R.drawable.ic_sad_24, R.color.insight_sad_bg)
+            "angry", "irritado" -> Pair(R.drawable.ic_angry_24, R.color.insight_angry_bg)
             else -> Pair(R.drawable.ic_neutral_24, R.color.insight_neutral_bg)
         }
     }
 
-    private fun getEmptyMonthInsights(): List<Insight> {
-        return listOf(
-            Insight(
-                rotulo = "Dias Ativos (Mês)",
-                valor = "0 dias",
-                iconResId = R.drawable.ic_active_days_24,
-                backgroundColorResId = R.color.insight_calm_bg
-            ),
-            Insight(
-                rotulo = "Humor Mais Comum",
-                valor = "Sem Registros",
-                iconResId = R.drawable.ic_neutral_24,
-                backgroundColorResId = R.color.insight_neutral_bg
-            ),
-            Insight(
-                rotulo = "Humor Menos Comum",
-                valor = "Sem Registros",
-                iconResId = R.drawable.ic_neutral_24,
-                backgroundColorResId = R.color.insight_neutral_bg
-            )
-        )
-    }
+    private fun createEmptyInsight(msg: String) = Insight("Status", msg, R.drawable.ic_neutral_24, R.color.insight_neutral_bg)
 }
 
+// --- A FACTORY TAMBÉM DEVE ESTAR AQUI ---
 class InsightsViewModelFactory(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
