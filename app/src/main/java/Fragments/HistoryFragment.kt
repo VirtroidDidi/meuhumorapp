@@ -1,106 +1,138 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/HistoryFragment.kt
-
 package com.example.apphumor
 
 import android.os.Bundle
-import android.util.Log
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
+import com.example.apphumor.bottomsheet.FilterBottomSheet
 import com.example.apphumor.databinding.FragmentTelaCBinding
 import com.example.apphumor.di.DependencyProvider
-import com.example.apphumor.viewmodel.HomeViewModel // Usaremos HomeViewModel
-import com.example.apphumor.viewmodel.HomeViewModelFactory // NOVO: Importa a Factory
+import com.example.apphumor.models.FilterState
+import com.example.apphumor.models.FilterTimeRange
+import com.example.apphumor.viewmodel.HomeViewModel
+import com.example.apphumor.viewmodel.HomeViewModelFactory
 
-/**
- * [HistoryFragment] (Antigo FragmentTelaC)
- * Exibe o histórico completo de notas.
- * Observa o LiveData de todas as notas mantido pelo HomeViewModel.
- */
 class HistoryFragment : Fragment() {
-    private lateinit var binding: FragmentTelaCBinding
+    private var _binding: FragmentTelaCBinding? = null
+    private val binding get() = _binding!!
 
-    // Usa lateinit var para ser inicializada no onViewCreated
     private lateinit var viewModel: HomeViewModel
-
     private lateinit var adapter: HumorNoteAdapter
-    // CORREÇÃO: Variável privada deve ser 'tag' minúscula (convenção de Kotlin)
-    private val tag = "HistoryFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentTelaCBinding.inflate(inflater, container, false)
+        _binding = FragmentTelaCBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. INICIALIZAÇÃO CORRETA DO VIEWMODEL COM FACTORY
+        // 1. Inicializa ViewModel
         viewModel = ViewModelProvider(
-            this,
+            this, // Compartilhando o ViewModel com a Activity se quisesse, mas aqui usamos 'this' para escopo local ou 'requireActivity()' se quiser compartilhar dados com a Home
             HomeViewModelFactory(
-                DependencyProvider.auth,                // Obtém a dependência centralizada
-                DependencyProvider.databaseRepository   // Obtém a dependência centralizada
+                DependencyProvider.auth,
+                DependencyProvider.databaseRepository
             )
         ).get(HomeViewModel::class.java)
-        // -------------------------------------------------------------
 
         setupRecyclerView()
-        setupObservers() // Configura a observação dos dados
+        setupSearchAndFilters()
+        setupObservers()
     }
 
     private fun setupRecyclerView() {
-        // O adaptador é inicializado para NÃO mostrar o botão de edição
         adapter = HumorNoteAdapter(showEditButton = false)
-
         binding.recyclerViewAllNotes.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HistoryFragment.adapter
         }
     }
 
-    /**
-     * Configura a observação do LiveData de TODAS as notas no HomeViewModel.
-     */
-    private fun setupObservers() {
-        // Observa o LiveData de TODAS as notas (allNotes)
-        viewModel.allNotes.observe(viewLifecycleOwner) { notes ->
-            if (notes.isNotEmpty()) {
-                // CORREÇÃO CRÍTICA: Acessa a nova propriedade 'timestamp' do modelo HumorNote.
-                val sortedNotes = notes.sortedByDescending { it.timestamp }
+    private fun setupSearchAndFilters() {
+        // A. Listener da Barra de Busca (Digitação em tempo real)
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
-                binding.recyclerViewAllNotes.visibility = View.VISIBLE
-                binding.emptyState.visibility = View.GONE
-                adapter.submitList(sortedNotes)
-                // CORREÇÃO: Usando a variável 'tag' (minúscula)
-                Log.d(tag, "Histórico atualizado com ${sortedNotes.size} notas.")
+            override fun afterTextChanged(s: Editable?) {
+                // Atualiza o ViewModel a cada letra digitada
+                viewModel.updateSearchQuery(s.toString())
+            }
+        })
+
+        // B. Listener do Botão de Filtro
+        binding.btnFilter.setOnClickListener {
+            // Pega o estado atual ou cria um novo se for nulo
+            val currentState = viewModel.filterState.value ?: FilterState()
+
+            // Abre o BottomSheet passando o estado atual
+            val bottomSheet = FilterBottomSheet(currentState) { newState ->
+                // Callback: Quando o usuário clica em "Aplicar", recebemos o newState aqui
+                viewModel.updateFilterState(newState)
+            }
+            bottomSheet.show(parentFragmentManager, "FilterBottomSheet")
+        }
+    }
+
+    private fun setupObservers() {
+        // 1. Observa a LISTA FILTRADA (Não mais a lista bruta)
+        viewModel.filteredHistoryNotes.observe(viewLifecycleOwner) { notes ->
+            adapter.submitList(notes)
+
+            // Controle de Visibilidade (Lista vs Estado Vazio)
+            binding.recyclerViewAllNotes.isVisible = notes.isNotEmpty()
+            binding.emptyState.isVisible = notes.isEmpty()
+
+            // Atualiza texto de "vazio" dependendo se tem filtro ou não
+            if (notes.isEmpty()) {
+                val isFiltering = viewModel.filterState.value?.let {
+                    it.query.isNotEmpty() || it.timeRange != FilterTimeRange.ALL_TIME
+                } ?: false
+
+                binding.tvEmptyMessage.text = if (isFiltering) {
+                    "Nenhum resultado para sua busca."
+                } else {
+                    "Seu histórico está vazio."
+                }
+            }
+        }
+
+        // 2. Observa o ESTADO DO FILTRO para dar feedback visual
+        viewModel.filterState.observe(viewLifecycleOwner) { state ->
+            // Atualiza o texto de feedback (aquela linha pequena abaixo da busca)
+            val activeFilters = mutableListOf<String>()
+
+            if (state.timeRange == FilterTimeRange.LAST_7_DAYS) activeFilters.add("7 dias")
+            if (state.timeRange == FilterTimeRange.LAST_30_DAYS) activeFilters.add("30 dias")
+            if (state.selectedHumors.isNotEmpty()) activeFilters.add("${state.selectedHumors.size} humores")
+            if (state.onlyWithNotes) activeFilters.add("Com anotação")
+
+            if (activeFilters.isNotEmpty()) {
+                binding.tvFilterStatus.isVisible = true
+                binding.tvFilterStatus.text = "Filtros ativos: ${activeFilters.joinToString(", ")}"
+                // Opcional: Mudar cor do ícone de filtro para indicar atividade
+                binding.btnFilter.setIconTintResource(R.color.teal_700)
             } else {
-                binding.recyclerViewAllNotes.visibility = View.GONE
-                binding.emptyState.visibility = View.VISIBLE
-                adapter.submitList(emptyList())
-                // CORREÇÃO: Usando a variável 'tag' (minúscula)
-                Log.d(tag, "Histórico vazio.")
+                binding.tvFilterStatus.isVisible = false
+                binding.btnFilter.setIconTintResource(R.color.black) // Ou cor padrão
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        // O LiveData no ViewModel cuida da atualização.
-    }
-
-    // CORREÇÃO: Adicionando onDestroyView para evitar Memory Leaks com ViewBinding
     override fun onDestroyView() {
         super.onDestroyView()
-        // O _binding não existe aqui, mas é uma boa prática adicionar
-        // _binding = null se estiver usando FragmentTelaCBinding?
+        _binding = null
     }
 }

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/rounded_bottom_sheet_bg"
+    android:paddingBottom="24dp">
+
+    <View
+        android:id="@+id/drag_handle"
+        android:layout_width="48dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bottom_sheet_handle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_filter_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="24dp"
+        android:text="Filtrar e Ordenar"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/drag_handle" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_clear_filters"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:text="Limpar"
+        android:textColor="?attr/colorError"
+        app:layout_constraintBaseline_toBaselineOf="@id/tv_filter_title"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_filter_title">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ordenar por"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary"/>
+
+            <RadioGroup
+                android:id="@+id/rg_sort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_newest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mais Recentes"
+                    android:checked="true"
+                    android:layout_marginEnd="16dp"/>
+
+                <RadioButton
+                    android:id="@+id/rb_oldest"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mais Antigos" />
+            </RadioGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant"
+                android:layout_marginVertical="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Período"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary"/>
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_all_time"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="Todo o Histórico" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_7_days"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Últimos 7 dias" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_30_days"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Últimos 30 dias" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant"
+                android:layout_marginVertical="16dp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Humor (Selecione um ou mais)"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="?android:attr/textColorSecondary"/>
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chip_group_humor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:singleSelection="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_super_happy"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Excelente" /> <com.google.android.material.chip.Chip
+                android:id="@+id/chip_humor_happy"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bem" /> <com.google.android.material.chip.Chip
+                android:id="@+id/chip_humor_neutral"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Neutro" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_sad"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Triste" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_angry"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Irritado" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_calm"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Calmo" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_energetic"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Energético" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant"
+                android:layout_marginVertical="16dp"/>
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_only_notes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Apenas com anotações escritas"
+                android:textStyle="bold" />
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="80dp" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_apply_filters"
+        style="@style/AppButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:text="Aplicar Filtros"
+        android:paddingVertical="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

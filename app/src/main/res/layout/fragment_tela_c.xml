@@ -5,40 +5,119 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent"
+    android:background="?attr/colorSurfaceContainerLow"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
     tools:context=".HistoryFragment">
+
+    <LinearLayout
+        android:id="@+id/top_bar_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_search"
+            style="@style/ThemeOverlay.Material3.AutoCompleteTextView.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:startIconDrawable="@drawable/ic_search_24"
+            app:endIconMode="clear_text"
+            app:boxCornerRadiusTopStart="24dp"
+            app:boxCornerRadiusTopEnd="24dp"
+            app:boxCornerRadiusBottomStart="24dp"
+            app:boxCornerRadiusBottomEnd="24dp"
+            app:boxStrokeWidth="0dp"
+            app:boxBackgroundColor="?attr/colorSurfaceContainerHigh"
+            android:hint="Buscar nas anotações...">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:maxLines="1"
+                android:inputType="text"
+                android:imeOptions="actionSearch"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_filter"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            app:icon="@drawable/ic_filter_list_24"
+            app:iconTint="?attr/colorOnSurfaceVariant"
+            android:backgroundTint="?attr/colorSurfaceContainerHigh"
+            app:cornerRadius="12dp"
+            android:tooltipText="Filtros Avançados"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_filter_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
+        android:text="Filtros ativos: Triste, Últimos 7 dias"
+        android:textSize="12sp"
+        android:textColor="?attr/colorPrimary"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/top_bar_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewAllNotes"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
         android:clipToPadding="false"
-        android:visibility="gone"
+        android:paddingTop="8dp"
+        android:paddingBottom="80dp"
+        android:visibility="visible"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/tv_filter_status"
+        app:layout_constraintVertical_bias="0.0" />
 
     <LinearLayout
         android:id="@+id/emptyState"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:orientation="vertical"
         android:gravity="center"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/top_bar_container">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_search_24"
+            app:tint="?attr/colorOutline"/>
 
         <TextView
+            android:id="@+id/tv_empty_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="Nenhum registro encontrado"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="@android:color/darker_gray"/>
     </LinearLayout>
