@@ -8,10 +8,7 @@ import com.google.firebase.database.Exclude // Importação necessária para evi
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.RawValue
 
-/**
- * Classe de modelo para armazenar informações do usuário.
- * Imutável (val).
- */
+
 data class User(
     @DocumentId
     @get:Exclude // Não salva o UID dentro do objeto JSON, pois já é a chave do nó
