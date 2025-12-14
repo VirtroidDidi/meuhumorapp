@@ -8,12 +8,11 @@
     android:padding="32dp"
     tools:context=".viewmodel.LoginActivity">
 
-    <!-- Título Principal -->
     <TextView
         android:id="@+id/tv_app_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="App Humor"
+        android:text="@string/login_title"
         android:textSize="32sp"
         android:textStyle="bold"
         android:textColor="?attr/colorPrimary"
@@ -25,21 +24,20 @@
         android:id="@+id/tv_welcome"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Acompanhe seu bem-estar."
+        android:text="@string/login_subtitle"
         android:textSize="18sp"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_app_name" />
 
-    <!-- Campo de E-mail (usando TextInputLayout) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_email"
         style="@style/AppTextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:hint="E-mail"
+        android:hint="@string/hint_email"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_welcome">
@@ -51,14 +49,13 @@
             android:inputType="textEmailAddress" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Campo de Senha (usando TextInputLayout) -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/til_senha"
         style="@style/AppTextInputLayout"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Senha"
+        android:hint="@string/hint_password"
         app:endIconMode="password_toggle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,20 +68,18 @@
             android:inputType="textPassword" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Botão de Login Principal -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_login"
         style="@style/AppButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="Entrar"
+        android:text="@string/action_login"
         android:paddingVertical="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/til_senha" />
 
-    <!-- Texto para Cadastro (com cor de destaque) -->
     <TextView
         android:id="@+id/text_cadastro"
         android:layout_width="wrap_content"
@@ -93,7 +88,7 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="8dp"
-        android:text="Não tem conta? Cadastre-se"
+        android:text="@string/action_go_to_register"
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="?attr/colorSecondary"

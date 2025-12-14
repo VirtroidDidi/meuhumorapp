@@ -1,11 +1,6 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/AddHumorActivity.kt
-
 package com.example.apphumor
 
 import android.app.Activity
-// ===============================================
-// NOVO IMPORT NECESSÁRIO PARA CONECTIVITY_SERVICE
-// ===============================================
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -49,13 +44,12 @@ class AddHumorActivity : AppCompatActivity() {
     }
 
     private fun setupHumorButtons() {
-        listOf(
-            binding.btnCalm,
-            binding.btnEnergetic,
-            binding.btnSad,
-            binding.btnAngry,
-            binding.btnNeutral
-        ).forEach { button ->
+        val buttons = listOf(
+            binding.btnCalm, binding.btnEnergetic,
+            binding.btnSad, binding.btnAngry, binding.btnNeutral
+        )
+
+        buttons.forEach { button ->
             button.setOnClickListener {
                 selectedHumor = when (button.id) {
                     R.id.btn_calm -> "Calm"
@@ -64,7 +58,7 @@ class AddHumorActivity : AppCompatActivity() {
                     R.id.btn_angry -> "Angry"
                     else -> "Neutral"
                 }
-                updateButtonSelection(button)
+                buttons.forEach { it.isChecked = (it == button) }
             }
         }
     }
@@ -78,54 +72,42 @@ class AddHumorActivity : AppCompatActivity() {
                 "Angry" -> R.id.btn_angry
                 else -> R.id.btn_neutral
             }
-            if (buttonId != R.id.btn_neutral || note.humor == "Neutral") {
-                findViewById<MaterialButton>(buttonId)?.performClick()
-            }
+            // Simula clique para selecionar visualmente e setar a variável
+            findViewById<MaterialButton>(buttonId)?.performClick()
 
             binding.etNotes.setText(note.descricao)
-            binding.tvTitle.text = "Editar Registro"
+            binding.tvTitle.text = getString(R.string.add_humor_edit_title)
         }
-    }
-
-    private fun updateButtonSelection(selectedButton: MaterialButton) {
-        listOf(
-            binding.btnCalm,
-            binding.btnEnergetic,
-            binding.btnSad,
-            binding.btnAngry,
-            binding.btnNeutral
-        ).forEach { it.isChecked = it == selectedButton }
     }
 
     private fun setupSaveButton() {
         binding.btnSave.setOnClickListener {
             val user = DependencyProvider.auth.currentUser
-            val humor = selectedHumor ?: run {
-                showToast("Selecione um humor!")
+            val humor = selectedHumor
+
+            if (humor == null) {
+                showToast(getString(R.string.error_select_humor))
                 return@setOnClickListener
             }
 
             if (user == null) {
-                showToast("Usuário não autenticado. Tente logar novamente.")
+                showToast(getString(R.string.error_user_not_auth))
                 return@setOnClickListener
             }
 
-            val note = createHumorNote(humor)
+            val note = existingNote?.copy(
+                humor = humor,
+                descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() },
+                // Mantém o timestamp original se for edição
+                timestamp = existingNote?.timestamp ?: System.currentTimeMillis()
+            ) ?: HumorNote(
+                timestamp = System.currentTimeMillis(),
+                humor = humor,
+                descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() }
+            )
 
             viewModel.saveOrUpdateHumorNote(note, existingNote != null)
         }
-    }
-
-    private fun createHumorNote(humor: String): HumorNote {
-        return existingNote?.copy(
-            humor = humor,
-            descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() }
-        ) ?: HumorNote(
-            // CORREÇÃO: Usando timestamp direto em vez de mapa de dados
-            timestamp = System.currentTimeMillis(),
-            humor = humor,
-            descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() }
-        )
     }
 
     private fun setupSaveStatusObserver() {
@@ -134,35 +116,34 @@ class AddHumorActivity : AppCompatActivity() {
                 when (state) {
                     is SaveState.Idle -> {
                         binding.btnSave.isEnabled = true
-                        binding.btnSave.text = if (existingNote != null) "Salvar Alterações" else "Salvar Registro"
+                        binding.btnSave.text = if (existingNote != null)
+                            getString(R.string.action_save_changes)
+                        else
+                            getString(R.string.action_save_record)
                     }
                     is SaveState.Loading -> {
                         binding.btnSave.isEnabled = false
-                        binding.btnSave.text = "Salvando..."
+                        binding.btnSave.text = getString(R.string.status_saving)
                     }
                     is SaveState.Success -> {
-                        // ===============================================
-                        // 🟡 TAREFA 2.4: Feedback de Gravação Offline
-                        // ===============================================
-                        // Verifica conexão simples para feedback visual
                         val isOffline = !isInternetAvailable()
-
-                        val message = if (existingNote != null) "Registro atualizado!" else "Registro salvo!"
+                        val baseMsg = if (existingNote != null)
+                            getString(R.string.msg_record_updated)
+                        else
+                            getString(R.string.msg_record_saved)
 
                         if (isOffline) {
-                            // Feedback específico se o dispositivo está offline
-                            showToast("$message (Salvo no dispositivo)")
+                            showToast(getString(R.string.msg_saved_offline, baseMsg))
                         } else {
-                            showToast(message)
+                            showToast(baseMsg)
                         }
 
                         setResult(Activity.RESULT_OK)
                         finish()
                         viewModel.resetSaveStatus()
-                        // ===============================================
                     }
                     is SaveState.Error -> {
-                        showToast(state.message)
+                        showToast(state.message) // Mensagem de erro do VM (pode ser técnica)
                         binding.btnSave.isEnabled = true
                         viewModel.resetSaveStatus()
                     }
@@ -171,21 +152,14 @@ class AddHumorActivity : AppCompatActivity() {
         }
     }
 
+
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-    // ===============================================
-    // 🟡 TAREFA 2.4: Função utilitária para checagem de rede
-    // ===============================================
     private fun isInternetAvailable(): Boolean {
-        // Checagem básica via ConnectivityManager
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        // A partir do API 29 (Android 10), métodos mais novos são preferidos,
-        // mas activeNetworkInfo ainda é amplamente usado para compatibilidade.
-        @Suppress("DEPRECATION")
         val activeNetwork = cm.activeNetworkInfo
         return activeNetwork != null && activeNetwork.isConnected
     }
-    // ===============================================
 }

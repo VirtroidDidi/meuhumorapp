@@ -11,7 +11,6 @@
     android:paddingBottom="16dp"
     tools:context=".CadastroActivity">
 
-    <!-- ScrollView para garantir que o conteúdo seja visível em telas menores -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -21,17 +20,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- ConstraintLayout interno para manter a hierarquia de IDs -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- Título Principal (Elevado e Centralizado na parte superior) -->
             <TextView
                 android:id="@+id/tv_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Crie sua conta"
+                android:text="@string/register_title"
                 android:textSize="32sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -43,7 +40,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Preencha os dados abaixo para começar"
+                android:text="@string/register_subtitle"
                 android:textSize="16sp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginTop="8dp"
@@ -51,19 +48,13 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_title" />
 
-
-            <!-- Campo de Nome -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_nome"
                 style="@style/AppTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="80dp"
-                android:hint="Nome Completo"
-                app:boxCornerRadiusBottomEnd="8dp"
-                app:boxCornerRadiusBottomStart="8dp"
-                app:boxCornerRadiusTopEnd="8dp"
-                app:boxCornerRadiusTopStart="8dp"
+                android:layout_marginTop="40dp"
+                android:hint="@string/hint_name"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_title">
@@ -75,18 +66,13 @@
                     android:inputType="textPersonName" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo de E-mail -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_email"
                 style="@style/AppTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="E-mail"
-                app:boxCornerRadiusBottomEnd="8dp"
-                app:boxCornerRadiusBottomStart="8dp"
-                app:boxCornerRadiusTopEnd="8dp"
-                app:boxCornerRadiusTopStart="8dp"
+                android:hint="@string/hint_email"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/til_nome">
@@ -98,19 +84,14 @@
                     android:inputType="textEmailAddress" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo de Senha -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_senha"
                 style="@style/AppTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Senha (mín. 6 caracteres)"
+                android:hint="@string/hint_password_min"
                 app:endIconMode="password_toggle"
-                app:boxCornerRadiusBottomEnd="8dp"
-                app:boxCornerRadiusBottomStart="8dp"
-                app:boxCornerRadiusTopEnd="8dp"
-                app:boxCornerRadiusTopStart="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/til_email">
@@ -122,19 +103,14 @@
                     android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo de Confirmação de Senha -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_confirmar_senha"
                 style="@style/AppTextInputLayout"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Confirmar Senha"
+                android:hint="@string/hint_confirm_password"
                 app:endIconMode="password_toggle"
-                app:boxCornerRadiusBottomEnd="8dp"
-                app:boxCornerRadiusBottomStart="8dp"
-                app:boxCornerRadiusTopEnd="8dp"
-                app:boxCornerRadiusTopStart="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/til_senha">
@@ -146,7 +122,6 @@
                     android:inputType="textPassword" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Seleção de Idade (Usando um Card para agrupar visualmente) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_idade"
                 android:layout_width="0dp"
@@ -174,12 +149,11 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Sua Idade:"
+                        android:text="@string/label_age"
                         android:textSize="18sp"
                         android:textStyle="normal"
                         android:textColor="?attr/colorOnSurface" />
 
-                    <!-- O NumberPicker foi mantido no estilo original para preservar o ID -->
                     <NumberPicker
                         android:id="@+id/number_picker_idade"
                         android:layout_width="wrap_content"
@@ -188,14 +162,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Botão de Cadastro (Ocupando toda a largura e com margem superior maior) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_cadastro"
                 style="@style/AppButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="40dp"
-                android:text="Cadastrar"
+                android:text="@string/action_register"
                 android:textSize="18sp"
                 android:paddingVertical="14dp"
                 app:cornerRadius="12dp"
@@ -207,7 +180,6 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 
-    <!-- Texto para Login (Alinhado à parte inferior do ConstraintLayout pai) -->
     <TextView
         android:id="@+id/text_login"
         android:layout_width="wrap_content"
@@ -215,7 +187,7 @@
         android:clickable="true"
         android:focusable="true"
         android:padding="8dp"
-        android:text="Já tenho conta. Fazer login"
+        android:text="@string/action_go_to_login"
         android:textSize="16sp"
         android:textStyle="bold"
         android:textColor="?attr/colorSecondary"

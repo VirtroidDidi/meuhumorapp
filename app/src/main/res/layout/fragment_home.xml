@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:paddingHorizontal="16dp">
 
-    <!-- NOVO: Card de Progresso Diário -->
     <include
         android:id="@+id/progress_card"
         layout="@layout/layout_progress_card"
@@ -17,7 +16,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp" />
 
-    <!-- RecyclerView de Notas -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewNotes"
         android:layout_width="0dp"
@@ -31,7 +29,6 @@
         android:clipToPadding="false"
         android:scrollbars="vertical"/>
 
-    <!-- Estado Vazio (Ajustado para ConstraintLayout) -->
     <LinearLayout
         android:id="@+id/emptyState"
         android:layout_width="match_parent"
@@ -48,7 +45,7 @@
             android:id="@+id/tv_no_record"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nenhum registro para hoje"
+            android:text="@string/home_empty_title"
             android:textSize="18sp"
             android:textStyle="bold"/>
 
@@ -57,14 +54,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Registre como você está se sentindo hoje"/>
+            android:text="@string/home_empty_subtitle"/>
 
         <Button
             android:id="@+id/btn_add_record"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="+ Adicionar Registro"/>
+            android:text="@string/action_add_record"/>
 
     </LinearLayout>
 

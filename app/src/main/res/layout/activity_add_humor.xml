@@ -21,7 +21,7 @@
                 android:id="@+id/tv_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Registrar Humor"
+                android:text="@string/add_humor_title"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:textColor="?attr/colorPrimary"
@@ -33,7 +33,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="Como você está se sentindo agora?"
+                android:text="@string/question_feeling"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -55,7 +55,7 @@
                     style="@style/AppOutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Calmo"
+                    android:text="@string/humor_calm"
                     app:icon="@drawable/ic_calm_24"
                     app:iconGravity="textStart"/>
 
@@ -64,7 +64,7 @@
                     style="@style/AppOutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Energético"
+                    android:text="@string/humor_energetic"
                     app:icon="@drawable/ic_energetic_24"
                     app:iconGravity="textStart"/>
 
@@ -73,7 +73,7 @@
                     style="@style/AppOutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Triste"
+                    android:text="@string/humor_sad"
                     app:icon="@drawable/ic_sad_24"
                     app:iconGravity="textStart"/>
 
@@ -82,7 +82,7 @@
                     style="@style/AppOutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Irritado"
+                    android:text="@string/humor_angry"
                     app:icon="@drawable/ic_angry_24"
                     app:iconGravity="textStart"/>
 
@@ -91,7 +91,7 @@
                     style="@style/AppOutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Neutro"
+                    android:text="@string/humor_neutral"
                     app:icon="@drawable/ic_neutral_24"
                     app:iconGravity="textStart"/>
 
@@ -102,7 +102,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Adicionar Notas (Opcional)"
+                android:text="@string/label_notes_optional"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
@@ -112,7 +112,7 @@
                 android:id="@+id/tv_notes_question"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="O que te fez sentir assim hoje?"
+                android:text="@string/question_why"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_notes_title" />
@@ -132,7 +132,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="top"
-                    android:hint="Descreva seu dia aqui..."
+                    android:hint="@string/hint_notes"
                     android:lines="4" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -142,7 +142,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Salvar Registro"
+                android:text="@string/action_save_record"
                 android:paddingVertical="12dp"
                 app:layout_constraintTop_toBottomOf="@id/til_notes"
                 app:layout_constraintBottom_toBottomOf="parent"

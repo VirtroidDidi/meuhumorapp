@@ -1,5 +1,3 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/HomeFragment.kt
-
 package com.example.apphumor
 
 import android.app.Activity
@@ -13,7 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
-import com.example.apphumor.databinding.FragmentTelaABinding
+import com.example.apphumor.databinding.FragmentHomeBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.viewmodel.HomeViewModel
@@ -22,10 +20,13 @@ import java.util.*
 
 /**
  * [HomeFragment]
- * Exibe APENAS as notas registradas no dia de hoje e o progresso.
+ * Exibe as notas registradas hoje e o progresso da sequência.
+ * Atualizado para usar FragmentHomeBinding e strings.xml.
  */
 class HomeFragment : Fragment() {
-    private lateinit var binding: FragmentTelaABinding
+    private var _binding: FragmentHomeBinding? = null
+    private val binding get() = _binding!!
+
     private lateinit var viewModel: HomeViewModel
     private lateinit var adapter: HumorNoteAdapter
     private val TAG = "HomeFragment"
@@ -39,14 +40,14 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentTelaABinding.inflate(inflater, container, false)
+        // Atualizado para o novo nome do layout: fragment_home
+        _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Inicialização com Factory
         viewModel = ViewModelProvider(
             this,
             HomeViewModelFactory(
@@ -61,7 +62,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        // showEditButton = true garante que o usuário possa editar a nota
         adapter = HumorNoteAdapter(showEditButton = true, onEditClick = { note ->
             val intent = Intent(requireActivity(), AddHumorActivity::class.java).apply {
                 putExtra("EDIT_NOTE", note)
@@ -86,17 +86,16 @@ class HomeFragment : Fragment() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Log.d(TAG, "Nota salva. UI será atualizada via LiveData.")
+            Log.d(TAG, "Nota salva com sucesso.")
         }
     }
 
     private fun setupObservers() {
-        // Observa APENAS as notas de HOJE
+        // Observa as notas de hoje filtradas pelo ViewModel
         viewModel.todayNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
                 binding.recyclerViewNotes.visibility = View.VISIBLE
                 binding.emptyState.visibility = View.GONE
-                // O Adapter recebe apenas as notas filtradas de hoje
                 adapter.submitList(notes)
             } else {
                 showEmptyState()
@@ -114,14 +113,16 @@ class HomeFragment : Fragment() {
         binding.progressCard.progressBar.progress = sequence
 
         val maxDays = binding.progressCard.progressBar.max
+
+        // Uso de strings.xml com suporte a argumentos dinâmicos (%1$d)
         var descriptionText = when {
-            sequence >= maxDays -> "Parabéns! Sequência semanal completa!"
-            sequence > 0 -> "Sequência de $sequence dias consecutivos!"
-            else -> "Sua sequência diária de notas."
+            sequence >= maxDays -> getString(R.string.sequence_congrats)
+            sequence > 0 -> getString(R.string.sequence_days, sequence)
+            else -> getString(R.string.sequence_default)
         }
 
         if (sequence == 0 && lastRecordedTimestamp != null) {
-            descriptionText = "Sequência Reiniciada. Comece hoje!"
+            descriptionText = getString(R.string.sequence_reset)
         }
         binding.progressCard.tvSequenceDescription.text = descriptionText
     }
@@ -131,7 +132,8 @@ class HomeFragment : Fragment() {
         binding.emptyState.visibility = View.VISIBLE
     }
 
-    override fun onResume() {
-        super.onResume()
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null // Importante para evitar vazamento de memória
     }
 }

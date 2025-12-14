@@ -1,4 +1,121 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AppHumor</string>
+
+    <string name="generic_error">Ocorreu um erro.</string>
+    <string name="error_no_internet">Você está offline. Alterações salvas no dispositivo.</string>
+    <string name="error_fill_all_fields">Preencha todos os campos.</string>
+    <string name="error_user_not_auth">Usuário não autenticado. Tente logar novamente.</string>
+    <string name="success_saved">Salvo com sucesso!</string>
+
+    <string name="login_title">App Humor</string>
+    <string name="login_subtitle">Acompanhe seu bem-estar.</string>
+    <string name="hint_email">E-mail</string>
+    <string name="hint_password">Senha</string>
+    <string name="action_login">Entrar</string>
+    <string name="action_go_to_register">Não tem conta? Cadastre-se</string>
+    <string name="login_success">Login realizado com sucesso.</string>
+    <string name="error_user_not_found">Usuário não encontrado.</string>
+    <string name="error_invalid_credentials">Senha incorreta ou credenciais inválidas.</string>
+    <string name="error_login_failed">Falha ao realizar o login. Tente novamente.</string>
+
+    <string name="register_title">Crie sua conta</string>
+    <string name="register_subtitle">Preencha os dados abaixo para começar</string>
+    <string name="hint_name">Nome Completo</string>
+    <string name="hint_password_min">Senha (mín. 6 caracteres)</string>
+    <string name="hint_confirm_password">Confirmar Senha</string>
+    <string name="label_age">Sua Idade:</string>
+    <string name="action_register">Cadastrar</string>
+    <string name="action_go_to_login">Já tenho conta. Fazer login</string>
+    <string name="error_password_mismatch">Senhas não conferem.</string>
+    <string name="error_password_short">A senha deve ter pelo menos 6 caracteres.</string>
+    <string name="error_invalid_data">Dados inválidos. Verifique todos os campos.</string>
+    <string name="error_weak_password">A senha é muito fraca.</string>
+    <string name="error_email_in_use">E-mail inválido ou já em uso.</string>
+
+    <string name="nav_home">Hoje</string>
+    <string name="nav_history">Histórico</string>
+    <string name="nav_profile">Usuário</string>
+    <string name="status_offline">Você está offline. Alterações salvas localmente.</string>
+
+    <string name="home_empty_title">Nenhum registro para hoje</string>
+    <string name="home_empty_subtitle">Registre como você está se sentindo hoje</string>
+    <string name="action_add_record">+ Adicionar Registro</string>
+    <string name="progress_label_days">Dias</string>
+    <string name="sequence_congrats">Parabéns! Sequência semanal completa!</string>
+    <string name="sequence_days">Sequência de %1$d dias consecutivos!</string> <string name="sequence_default">Sua sequência diária de notas.</string>
+    <string name="sequence_reset">Sequência Reiniciada. Comece hoje!</string>
+
+    <string name="search_hint">Buscar nas anotações...</string>
+    <string name="filter_active_format">Filtros ativos: %1$s</string>
+    <string name="history_empty_search">Nenhum resultado para sua busca.</string>
+    <string name="history_empty_list">Seu histórico está vazio.</string>
+    <string name="history_no_records_found">Nenhum registro encontrado</string>
+
+    <string name="filter_title">Filtrar e Ordenar</string>
+    <string name="action_clear">Limpar</string>
+    <string name="action_apply">Aplicar Filtros</string>
+    <string name="filter_section_sort">Ordenar por</string>
+    <string name="sort_newest">Mais Recentes</string>
+    <string name="sort_oldest">Mais Antigos</string>
+    <string name="filter_section_period">Período</string>
+    <string name="period_all">Todo o Histórico</string>
+    <string name="period_7_days">Últimos 7 dias</string>
+    <string name="period_30_days">Últimos 30 dias</string>
+    <string name="filter_section_humor">Humor (Selecione um ou mais)</string>
+    <string name="filter_only_notes">Apenas com anotações escritas</string>
+
+    <string name="humor_calm">Calmo</string>
+    <string name="humor_energetic">Energético</string>
+    <string name="humor_sad">Triste</string>
+    <string name="humor_angry">Irritado</string>
+    <string name="humor_neutral">Neutro</string>
+    <string name="humor_excellent">Excelente</string>
+    <string name="humor_good">Bem</string>
+
+    <string name="add_humor_title">Registrar Humor</string>
+    <string name="add_humor_edit_title">Editar Registro</string>
+    <string name="question_feeling">Como você está se sentindo agora?</string>
+    <string name="label_notes_optional">Adicionar Notas (Opcional)</string>
+    <string name="question_why">O que te fez sentir assim hoje?</string>
+    <string name="hint_notes">Descreva seu dia aqui...</string>
+    <string name="action_save_record">Salvar Registro</string>
+    <string name="action_save_changes">Salvar Alterações</string>
+    <string name="status_saving">Salvando...</string>
+    <string name="error_select_humor">Selecione um humor!</string>
+    <string name="msg_record_updated">Registro atualizado!</string>
+    <string name="msg_record_saved">Registro salvo!</string>
+    <string name="msg_saved_offline">%1$s (Salvo no dispositivo)</string>
+
+    <string name="profile_title">Jornada de Bem-estar</string>
+    <string name="welcome_format">Bem-vindo(a), %1$s!</string>
+    <string name="welcome_default">Bem-vindo(a), Usuário!</string>
+    <string name="profile_subtitle">Sua jornada continua.</string>
+    <string name="section_data">Seus Dados</string>
+    <string name="hint_id">Idade</string>
+    <string name="section_preferences">Preferências</string>
+    <string name="label_daily_reminder">Lembrete Diário</string>
+    <string name="label_reminder_time">Horário do aviso</string>
+    <string name="desc_change_time">Alterar horário da notificação</string>
+    <string name="action_edit_profile">Editar Perfil</string>
+    <string name="action_logout">Sair da Conta</string>
+    <string name="msg_future_insights">Futuros Insights de Humor...</string>
+    <string name="msg_activate_reminder">Ative o lembrete para selecionar o horário.</string>
+    <string name="msg_press_edit">Pressione \'Editar Perfil\' para alterar o horário.</string>
+    <string name="error_name_empty">O nome não pode ser vazio.</string>
+    <string name="error_age_invalid">Idade inválida.</string>
+    <string name="success_profile_saved">Perfil salvo com sucesso!</string>
+    <string name="error_save_profile">Falha ao salvar alterações.</string>
+
+    <string name="period_current_month">Mês Atual</string>
+    <string name="insight_no_data">Sem dados para o período selecionado.</string>
+    <string name="insight_predominant">Humor Predominante</string>
+    <string name="insight_total">Total de Registros</string>
+    <string name="insight_best_day">Melhor Dia</string>
+    <string name="insight_notes_count">%1$d notas</string>
+
+    <string name="notification_channel_name">Lembrete Diário</string>
+    <string name="notification_channel_desc">Notificações para registrar seu humor</string>
+    <string name="notification_title">🔥 Não quebre sua sequência!</string>
+    <string name="notification_text">Você ainda não registrou seu humor hoje. Entre agora para manter seu histórico!</string>
+
 </resources>

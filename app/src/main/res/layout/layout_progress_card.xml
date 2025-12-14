@@ -15,7 +15,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- 1. Sequência em Dias (Número Grande) -->
         <TextView
             android:id="@+id/tv_sequence_days"
             android:layout_width="wrap_content"
@@ -27,24 +26,22 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- 2. Label 'Dias' -->
         <TextView
             android:id="@+id/tv_label_days"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dias"
+            android:text="@string/progress_label_days"
             android:textSize="14sp"
             android:textColor="?android:attr/textColorSecondary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tv_sequence_days" />
 
-        <!-- 3. Descrição/Status -->
         <TextView
             android:id="@+id/tv_sequence_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Sua sequência diária de notas."
+            android:text="@string/sequence_default"
             android:textSize="16sp"
             android:textColor="?android:attr/textColorPrimary"
             app:layout_constraintStart_toEndOf="@+id/tv_sequence_days"
@@ -52,7 +49,6 @@
             app:layout_constraintBottom_toTopOf="@+id/progress_bar"
             app:layout_constraintEnd_toEndOf="parent"/>
 
-        <!-- 4. Barra de Progresso (Simulação) -->
         <ProgressBar
             android:id="@+id/progress_bar"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"

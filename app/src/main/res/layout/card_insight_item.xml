@@ -28,7 +28,7 @@
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_gravity="center"
-                android:tint="@android:color/white"
+                app:tint="@android:color/white"
                 tools:src="@drawable/ic_neutral_24"
                 android:contentDescription="@null"/>
         </FrameLayout>
@@ -43,7 +43,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toEndOf="@id/icon_container"
             app:layout_constraintEnd_toEndOf="parent"
-            tools:text="Humor Mais Comum"/>
+            tools:text="@string/insight_predominant"/>
 
         <TextView
             android:id="@+id/tv_insight_value"
@@ -56,7 +56,7 @@
             app:layout_constraintTop_toBottomOf="@id/tv_insight_label"
             app:layout_constraintStart_toStartOf="@id/tv_insight_label"
             app:layout_constraintEnd_toEndOf="parent"
-            tools:text="Calmo (40%)"/>
+            tools:text="Calmo"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

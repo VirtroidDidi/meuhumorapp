@@ -12,7 +12,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.bottomsheet.FilterBottomSheet
-import com.example.apphumor.databinding.FragmentTelaCBinding
+// CORREÇÃO 1: Import correto baseado no nome 'fragment_history.xml'
+import com.example.apphumor.databinding.FragmentHistoryBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
@@ -20,7 +21,9 @@ import com.example.apphumor.viewmodel.HomeViewModel
 import com.example.apphumor.viewmodel.HomeViewModelFactory
 
 class HistoryFragment : Fragment() {
-    private var _binding: FragmentTelaCBinding? = null
+
+    // CORREÇÃO 2: Tipo da variável atualizado
+    private var _binding: FragmentHistoryBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var viewModel: HomeViewModel
@@ -31,16 +34,16 @@ class HistoryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentTelaCBinding.inflate(inflater, container, false)
+        // CORREÇÃO 3: Inflador correto
+        _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. Inicializa ViewModel
         viewModel = ViewModelProvider(
-            this, // Compartilhando o ViewModel com a Activity se quisesse, mas aqui usamos 'this' para escopo local ou 'requireActivity()' se quiser compartilhar dados com a Home
+            this,
             HomeViewModelFactory(
                 DependencyProvider.auth,
                 DependencyProvider.databaseRepository
@@ -54,6 +57,7 @@ class HistoryFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = HumorNoteAdapter(showEditButton = false)
+        // Agora o 'binding' vai reconhecer esse ID porque estamos usando o arquivo correto
         binding.recyclerViewAllNotes.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HistoryFragment.adapter
@@ -61,25 +65,18 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupSearchAndFilters() {
-        // A. Listener da Barra de Busca (Digitação em tempo real)
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 
             override fun afterTextChanged(s: Editable?) {
-                // Atualiza o ViewModel a cada letra digitada
                 viewModel.updateSearchQuery(s.toString())
             }
         })
 
-        // B. Listener do Botão de Filtro
         binding.btnFilter.setOnClickListener {
-            // Pega o estado atual ou cria um novo se for nulo
             val currentState = viewModel.filterState.value ?: FilterState()
-
-            // Abre o BottomSheet passando o estado atual
             val bottomSheet = FilterBottomSheet(currentState) { newState ->
-                // Callback: Quando o usuário clica em "Aplicar", recebemos o newState aqui
                 viewModel.updateFilterState(newState)
             }
             bottomSheet.show(parentFragmentManager, "FilterBottomSheet")
@@ -87,46 +84,40 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // 1. Observa a LISTA FILTRADA (Não mais a lista bruta)
         viewModel.filteredHistoryNotes.observe(viewLifecycleOwner) { notes ->
             adapter.submitList(notes)
 
-            // Controle de Visibilidade (Lista vs Estado Vazio)
             binding.recyclerViewAllNotes.isVisible = notes.isNotEmpty()
             binding.emptyState.isVisible = notes.isEmpty()
 
-            // Atualiza texto de "vazio" dependendo se tem filtro ou não
             if (notes.isEmpty()) {
                 val isFiltering = viewModel.filterState.value?.let {
                     it.query.isNotEmpty() || it.timeRange != FilterTimeRange.ALL_TIME
                 } ?: false
 
                 binding.tvEmptyMessage.text = if (isFiltering) {
-                    "Nenhum resultado para sua busca."
+                    getString(R.string.history_empty_search)
                 } else {
-                    "Seu histórico está vazio."
+                    getString(R.string.history_empty_list)
                 }
             }
         }
 
-        // 2. Observa o ESTADO DO FILTRO para dar feedback visual
         viewModel.filterState.observe(viewLifecycleOwner) { state ->
-            // Atualiza o texto de feedback (aquela linha pequena abaixo da busca)
             val activeFilters = mutableListOf<String>()
 
-            if (state.timeRange == FilterTimeRange.LAST_7_DAYS) activeFilters.add("7 dias")
-            if (state.timeRange == FilterTimeRange.LAST_30_DAYS) activeFilters.add("30 dias")
+            if (state.timeRange == FilterTimeRange.LAST_7_DAYS) activeFilters.add(getString(R.string.period_7_days))
+            if (state.timeRange == FilterTimeRange.LAST_30_DAYS) activeFilters.add(getString(R.string.period_30_days))
             if (state.selectedHumors.isNotEmpty()) activeFilters.add("${state.selectedHumors.size} humores")
-            if (state.onlyWithNotes) activeFilters.add("Com anotação")
+            if (state.onlyWithNotes) activeFilters.add(getString(R.string.filter_only_notes))
 
             if (activeFilters.isNotEmpty()) {
                 binding.tvFilterStatus.isVisible = true
-                binding.tvFilterStatus.text = "Filtros ativos: ${activeFilters.joinToString(", ")}"
-                // Opcional: Mudar cor do ícone de filtro para indicar atividade
+                binding.tvFilterStatus.text = getString(R.string.filter_active_format, activeFilters.joinToString(", "))
                 binding.btnFilter.setIconTintResource(R.color.teal_700)
             } else {
                 binding.tvFilterStatus.isVisible = false
-                binding.btnFilter.setIconTintResource(R.color.black) // Ou cor padrão
+                binding.btnFilter.setIconTintResource(R.color.black)
             }
         }
     }

@@ -9,7 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.animation.LayoutTransition
-import androidx.activity.result.contract.ActivityResultContracts // Importante
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -25,23 +25,21 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
+
+    // Fragmentos instanciados
     private val homeFragment = HomeFragment()
     private val profileFragment = ProfileFragment()
     private val historyFragment = HistoryFragment()
-    private var activeFragment: Fragment? = null
 
+    private var activeFragment: Fragment? = null
     private val handler = Handler(Looper.getMainLooper())
     private var isConnected = false
 
-    // 1. Criar o lançador de permissão
+    // Lançador de permissão para Notificações (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
-        if (isGranted) {
-            // Permissão concedida
-        } else {
-            // Permissão negada. O app funcionará sem notificações.
-        }
+        // Se concedido ou não, o fluxo segue. O Worker verifica antes de enviar.
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +47,9 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Animações de layout suaves (ex: quando a barra offline aparece)
         binding.root.layoutTransition = LayoutTransition()
+
         auth = FirebaseAuth.getInstance()
 
         if (savedInstanceState == null) {
@@ -58,12 +58,9 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
 
         setupNavigationButtons()
         setupConnectionMonitor()
-
-        // 2. Chamar a verificação de permissão
         askNotificationPermission()
     }
 
-    // Função para pedir permissão no Android 13+
     private fun askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
@@ -74,13 +71,11 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         }
     }
 
-    // ... (Mantenha o restante do código: showInitialFragment, setupNavigationButtons, etc.) ...
-
     private fun showInitialFragment() {
         supportFragmentManager.beginTransaction()
-            .add(R.id.fragmentContainerMain, homeFragment, "fragment_a")
-            .add(R.id.fragmentContainerMain, profileFragment, "fragment_b")
-            .add(R.id.fragmentContainerMain, historyFragment, "fragment_c")
+            .add(R.id.fragmentContainerMain, homeFragment, "fragment_home")
+            .add(R.id.fragmentContainerMain, profileFragment, "fragment_profile")
+            .add(R.id.fragmentContainerMain, historyFragment, "fragment_history")
             .hide(profileFragment)
             .hide(historyFragment)
             .commit()
@@ -133,15 +128,18 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
             binding.cvConnectionStatus.setCardBackgroundColor(
                 ContextCompat.getColor(this, R.color.status_offline_bg)
             )
-            binding.tvStatusText.text = "Você está offline. Alterações salvas localmente."
+            // USO DE STRING INTERNACIONALIZADA
+            binding.tvStatusText.text = getString(R.string.status_offline)
             binding.ivStatusIcon.setImageResource(R.drawable.ic_cloud_off_24)
         }
     }
 
+    // Método utilitário acessível pelos fragmentos se necessário
     fun isNetworkConnected(): Boolean {
         return isConnected
     }
 
+    // Implementação da interface do ProfileFragment para Logout
     override fun onLogoutSuccess() {
         val intent = Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

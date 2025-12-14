@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
-        android:text="Filtrar e Ordenar"
+        android:text="@string/filter_title"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
@@ -36,7 +36,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:text="Limpar"
+        android:text="@string/action_clear"
         android:textColor="?attr/colorError"
         app:layout_constraintBaseline_toBaselineOf="@id/tv_filter_title"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -56,7 +56,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ordenar por"
+                android:text="@string/filter_section_sort"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorSecondary"/>
@@ -71,7 +71,7 @@
                     android:id="@+id/rb_newest"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mais Recentes"
+                    android:text="@string/sort_newest"
                     android:checked="true"
                     android:layout_marginEnd="16dp"/>
 
@@ -79,7 +79,7 @@
                     android:id="@+id/rb_oldest"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mais Antigos" />
+                    android:text="@string/sort_oldest" />
             </RadioGroup>
 
             <View
@@ -91,7 +91,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Período"
+                android:text="@string/filter_section_period"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorSecondary"/>
@@ -109,21 +109,21 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="Todo o Histórico" />
+                    android:text="@string/period_all" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_7_days"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Últimos 7 dias" />
+                    android:text="@string/period_7_days" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_30_days"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Últimos 30 dias" />
+                    android:text="@string/period_30_days" />
             </com.google.android.material.chip.ChipGroup>
 
             <View
@@ -135,7 +135,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Humor (Selecione um ou mais)"
+                android:text="@string/filter_section_humor"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp"
                 android:textColor="?android:attr/textColorSecondary"/>
@@ -151,45 +151,49 @@
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Excelente" /> <com.google.android.material.chip.Chip
-                android:id="@+id/chip_humor_happy"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Bem" /> <com.google.android.material.chip.Chip
-                android:id="@+id/chip_humor_neutral"
-                style="@style/Widget.Material3.Chip.Filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Neutro" />
+                    android:text="@string/humor_excellent" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_happy"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_good" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_humor_neutral"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_neutral" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_humor_sad"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Triste" />
+                    android:text="@string/humor_sad" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_humor_angry"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Irritado" />
+                    android:text="@string/humor_angry" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_humor_calm"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Calmo" />
+                    android:text="@string/humor_calm" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_humor_energetic"
                     style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Energético" />
+                    android:text="@string/humor_energetic" />
 
             </com.google.android.material.chip.ChipGroup>
 
@@ -203,7 +207,7 @@
                 android:id="@+id/switch_only_notes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Apenas com anotações escritas"
+                android:text="@string/filter_only_notes"
                 android:textStyle="bold" />
 
             <Space
@@ -219,7 +223,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
-        android:text="Aplicar Filtros"
+        android:text="@string/action_apply"
         android:paddingVertical="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

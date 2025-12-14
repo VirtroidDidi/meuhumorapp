@@ -16,11 +16,12 @@
         android:paddingBottom="24dp">
 
         <TextView
+            android:id="@+id/tv_page_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="24dp"
-            android:text="Jornada de Bem-estar"
+            android:text="@string/profile_title"
             android:textColor="?attr/colorOnSurface"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -43,11 +44,11 @@
                     android:textColor="@color/white"
                     android:textSize="22sp"
                     android:textStyle="bold"
-                    tools:text="Bem-vindo(a)!" />
+                    tools:text="@string/welcome_default" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sua jornada continua."
+                    android:text="@string/profile_subtitle"
                     android:textColor="@color/white"
                     android:alpha="0.8" />
             </LinearLayout>
@@ -66,16 +67,26 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:text="@string/section_data"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/til_user_name"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Nome Completo">
+                    android:hint="@string/hint_name">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
                         android:enabled="false"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -85,11 +96,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="E-mail">
+                    android:hint="@string/hint_email">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_email"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
                         android:enabled="false"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -99,7 +111,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="Idade">
+                    android:hint="@string/hint_id">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_idade"
                         android:layout_width="match_parent"
@@ -113,6 +125,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="24dp"/>
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/section_preferences"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="18sp"
+                    android:layout_marginBottom="8dp"/>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -122,12 +143,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Lembrete Diário"
-                        android:textSize="16sp"/>
+                        android:text="@string/label_daily_reminder"
+                        android:textSize="16sp"
+                        android:textColor="?attr/colorOnSurface"/>
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switch_notificacao_perfil"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"/>
+                        android:layout_height="wrap_content"
+                        android:checked="true"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -135,22 +158,40 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:layout_marginTop="8dp"
-                    android:gravity="center_vertical">
+                    android:background="@drawable/edit_text_border"
+                    android:padding="4dp">
+
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:src="@drawable/ic_historico_24"
                         app:tint="?attr/colorOutline"
-                        android:layout_marginEnd="12dp"/>
+                        android:layout_marginEnd="12dp"
+                        android:layout_marginStart="4dp"/>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/label_reminder_time"
+                        android:textColor="?android:attr/textColorSecondary"/>
+
                     <TextView
                         android:id="@+id/tv_selected_time_perfil"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="20:00"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:padding="8dp"
-                        android:background="?attr/selectableItemBackground"/>
+                        android:textColor="?attr/colorPrimary"
+                        android:background="?attr/selectableItemBackground"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="@string/desc_change_time"/>
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -159,7 +200,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:text="Editar Perfil"
+                    android:text="@string/action_edit_profile"
                     app:icon="@drawable/ic_edit_24" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -177,10 +218,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Sair da Conta"
+            android:text="@string/action_logout"
             android:textColor="@color/design_default_color_error"
             app:icon="@drawable/ic_logout_24"
-            app:iconTint="@color/design_default_color_error"/>
+            app:iconTint="@color/design_default_color_error"
+            app:strokeColor="@color/design_default_color_error"/>
 
         <ProgressBar
             android:id="@+id/progressBarProfile"

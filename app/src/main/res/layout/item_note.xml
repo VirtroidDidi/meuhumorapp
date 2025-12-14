@@ -17,7 +17,6 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <!-- Botão de Editar (Alinhado ao topo e à direita) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEdit"
             style="@style/Widget.Material3.Button.TextButton"
@@ -31,13 +30,12 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/tvDescricao"/>
 
-        <!-- tvHumor (Título) - Alinhado Verticalmente ao Botão -->
         <TextView
             android:id="@+id/tvHumor"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="Humor: Excelente"
+            tools:text="Humor: Excelente"
             android:textColor="?attr/colorPrimary"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -46,26 +44,24 @@
             app:layout_constraintTop_toTopOf="@id/btnEdit"
             app:layout_constraintBottom_toBottomOf="@id/btnEdit"/>
 
-        <!-- tvDescricao (Corpo do Texto) - POSICIONAMENTO CORRIGIDO -->
         <TextView
             android:id="@+id/tvDescricao"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="O dia foi muito produtivo e me senti com muita energia. Esse campo pode ter muito texto."
+            tools:text="O dia foi muito produtivo e me senti com muita energia."
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnEdit" />
 
-        <!-- tvData (Rodapé) -->
         <TextView
             android:id="@+id/tvData"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Registrado em: 15/10/2025 - 14:30"
+            tools:text="Registrado em: 15/10/2025 - 14:30"
             android:textColor="?attr/colorSecondary"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="parent"
