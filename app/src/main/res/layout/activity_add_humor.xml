@@ -41,59 +41,106 @@
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/cg_humor"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                app:singleLine="false"
+                app:chipSpacing="10dp"
                 app:singleSelection="true"
                 app:selectionRequired="true"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/tv_question">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_calm"
-                    style="@style/AppOutlinedButton"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_rad"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_rad"
+                    app:chipIcon="@drawable/ic_mood_rad"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_happy"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_happy"
+                    app:chipIcon="@drawable/ic_mood_happy"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_grateful"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_grateful"
+                    app:chipIcon="@drawable/ic_mood_grateful"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_calm"
+                    style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/humor_calm"
-                    app:icon="@drawable/ic_calm_24"
-                    app:iconGravity="textStart"/>
+                    app:chipIcon="@drawable/ic_mood_calm"
+                    app:chipIconTint="@null" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_energetic"
-                    style="@style/AppOutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/humor_energetic"
-                    app:icon="@drawable/ic_energetic_24"
-                    app:iconGravity="textStart"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_sad"
-                    style="@style/AppOutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/humor_sad"
-                    app:icon="@drawable/ic_sad_24"
-                    app:iconGravity="textStart"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_angry"
-                    style="@style/AppOutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/humor_angry"
-                    app:icon="@drawable/ic_angry_24"
-                    app:iconGravity="textStart"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_neutral"
-                    style="@style/AppOutlinedButton"
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_neutral"
+                    style="@style/Widget.Material3.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/humor_neutral"
-                    app:icon="@drawable/ic_neutral_24"
-                    app:iconGravity="textStart"/>
+                    app:chipIcon="@drawable/ic_mood_neutral"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_pensive"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_pensive"
+                    app:chipIcon="@drawable/ic_mood_pensive"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_tired"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_tired"
+                    app:chipIcon="@drawable/ic_mood_tired"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_sad"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_sad"
+                    app:chipIcon="@drawable/ic_mood_sad"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_anxious"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_anxious"
+                    app:chipIcon="@drawable/ic_mood_anxious"
+                    app:chipIconTint="@null" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chip_angry"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/humor_angry"
+                    app:chipIcon="@drawable/ic_mood_angry"
+                    app:chipIconTint="@null" />
 
             </com.google.android.material.chip.ChipGroup>
 

@@ -64,11 +64,7 @@
     <string name="filter_section_humor">Humor (Selecione um ou mais)</string>
     <string name="filter_only_notes">Apenas com anotações escritas</string>
 
-    <string name="humor_calm">Calmo</string>
-    <string name="humor_energetic">Energético</string>
-    <string name="humor_sad">Triste</string>
-    <string name="humor_angry">Irritado</string>
-    <string name="humor_neutral">Neutro</string>
+    <string name="humor_rad">Incrível</string> <string name="humor_happy">Feliz</string>   <string name="humor_grateful">Grato</string> <string name="humor_calm">Calmo</string>     <string name="humor_neutral">Neutro</string> <string name="humor_pensive">Pensativo</string> <string name="humor_tired">Cansado</string>   <string name="humor_sad">Triste</string>      <string name="humor_anxious">Ansioso</string> <string name="humor_angry">Irritado</string>  <string name="humor_energetic">Energético</string>
     <string name="humor_excellent">Excelente</string>
     <string name="humor_good">Bem</string>
 
@@ -117,5 +113,4 @@
     <string name="notification_channel_desc">Notificações para registrar seu humor</string>
     <string name="notification_title">🔥 Não quebre sua sequência!</string>
     <string name="notification_text">Você ainda não registrou seu humor hoje. Entre agora para manter seu histórico!</string>
-
 </resources>

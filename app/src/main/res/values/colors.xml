@@ -1,45 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Cores Padrão que você já tinha -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="teal_700">#FF018786</color>
 
-    <!-- PALETA MODERNA E ACOLHEDORA (Inspirada na sua imagem) -->
-
-    <!-- Primária: Lilás suave (B3ADD9), usada para elementos chave (botões, topo da tela) -->
     <color name="primary_color">#FFB3ADD9</color>
-    <color name="on_primary_color">#FF0D0D0D</color> <!-- Texto escuro sobre a cor primária -->
-
-    <!-- Secundária: Verde-escuro (377769), para contraste e acento -->
+    <color name="on_primary_color">#FF0D0D0D</color>
     <color name="secondary_color">#FF377769</color>
-    <color name="on_secondary_color">#FFFFFFFF</color> <!-- Texto branco sobre a cor secundária -->
-
-    <!-- Fundo/Superfície: Bege/Creme suave para o fundo da tela (acolhedor) -->
+    <color name="on_secondary_color">#FFFFFFFF</color>
     <color name="background_light">#FFF9F4EF</color>
     <color name="surface_light">#FFFFFFFF</color>
     <color name="surface_container_light">#FFF2EBE3</color>
-
-    <!-- Cor de Destaque/Atenção (Amarelo/Coral) -->
     <color name="accent_yellow">#FFF2C849</color>
     <color name="accent_coral">#FFF27244</color>
-
-    <!-- Cores para Tema Escuro -->
     <color name="dark_background">#FF1A1A1A</color>
     <color name="dark_surface">#FF2A2A2A</color>
     <color name="on_dark_surface">#FFF9F4EF</color>
 
+    <color name="status_offline_bg">#424242</color>
+    <color name="status_offline_text">#FFFFFF</color>
+    <color name="status_syncing_bg">#FFB300</color>
 
-    <color name="insight_calm_bg">#4CAF50</color>
-    <color name="insight_energetic_bg">#FFC107</color>
-    <color name="insight_sad_bg">#2196F3</color>
-    <color name="insight_neutral_bg">#9E9E9E</color>
-    <color name="insight_angry_bg">#F44336</color>
+    <color name="mood_rad">#FFD700</color>    <color name="mood_happy">#FFA726</color>  <color name="mood_grateful">#66BB6A</color> <color name="mood_calm">#26A69A</color>     <color name="mood_neutral">#9E9E9E</color>  <color name="mood_pensive">#7E57C2</color>  <color name="mood_tired">#3F51B5</color>    <color name="mood_sad">#2196F3</color>      <color name="mood_anxious">#FF7043</color>  <color name="mood_angry">#EF5350</color>    <color name="insight_rad_bg">#FFF8E1</color>
+    <color name="insight_happy_bg">#FFF3E0</color>
+    <color name="insight_grateful_bg">#E8F5E9</color>
+    <color name="insight_calm_bg">#E0F2F1</color>
+    <color name="insight_neutral_bg">#F5F5F5</color>
+    <color name="insight_pensive_bg">#EDE7F6</color>
+    <color name="insight_tired_bg">#E8EAF6</color>
+    <color name="insight_sad_bg">#E3F2FD</color>
+    <color name="insight_anxious_bg">#FBE9E7</color>
+    <color name="insight_angry_bg">#FFEBEE</color>
 
-
-        <color name="status_offline_bg">#424242</color>
-        <color name="status_offline_text">#FFFFFF</color>
-        <color name="status_syncing_bg">#FFB300</color>
-
+    <color name="insight_energetic_bg">#FFF8E1</color>
 
 </resources>

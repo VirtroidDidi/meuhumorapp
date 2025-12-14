@@ -1,5 +1,6 @@
 package com.example.apphumor.viewmodel
 
+import android.app.Application
 import androidx.lifecycle.*
 import com.example.apphumor.R
 import com.example.apphumor.models.HumorNote
@@ -16,6 +17,10 @@ enum class TimeRange {
     CURRENT_MONTH
 }
 
+// Alteração: Agora estende AndroidViewModel para ter acesso ao Contexto (Application)
+// Necessário para buscar strings traduzidas (getString) dentro do ViewModel se necessário,
+// mas aqui usaremos para garantir acesso a recursos se precisarmos no futuro.
+// Mantive ViewModel padrão para compatibilidade com sua Factory atual, a lógica de string é feita via ID.
 class InsightsViewModel(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
@@ -95,41 +100,60 @@ class InsightsViewModel(
 
         val totalNotes = filteredNotes.size
 
+        // Agrupa e conta os humores
         val humorCounts = filteredNotes
             .filter { it.humor != null }
             .groupingBy { it.humor!!.lowercase(Locale.ROOT) }
             .eachCount()
 
+        // Encontra o mais comum
         val mostCommonEntry = humorCounts.maxByOrNull { it.value }
-        val mostCommonHumor = mostCommonEntry?.key?.replaceFirstChar { it.titlecase() } ?: "Neutro"
-        val (iconCommon, bgCommon) = getIconAndColorForHumor(mostCommonHumor)
+
+        // Formata o nome para exibição (ex: "Rad" -> "Rad" (será traduzido na View se usarmos ID) ou texto direto)
+        // Aqui usamos o texto cru do banco, mas a View (Fragment) pode traduzir se quiser,
+        // ou podemos retornar o String Resource ID no Insight.
+        // Para simplificar e manter compatibilidade com seu modelo Insight atual (que aceita String no valor),
+        // vamos retornar o nome capitalizado, mas o ícone será o visual principal.
+        val mostCommonHumorRaw = mostCommonEntry?.key?.replaceFirstChar { it.titlecase() } ?: "Neutro"
+
+        // Pega a configuração visual (Ícone e Cor de Fundo)
+        val (iconCommon, bgCommon, labelId) = getMoodConfig(mostCommonHumorRaw)
+
+        // Se quiser exibir o texto traduzido, precisaria passar o Context, mas como o Insight.valor é String,
+        // vamos passar o nome em inglês/banco por enquanto ou tentar mapear manualmente se crítico.
+        // O ícone já diz tudo!
 
         val bestDay = calculateBestDay(filteredNotes)
 
         return listOf(
             Insight(
                 rotulo = "Humor Predominante",
-                valor = mostCommonHumor,
+                valor = mostCommonHumorRaw, // Exibirá "Rad", "Happy", etc.
                 iconResId = iconCommon,
                 backgroundColorResId = bgCommon
             ),
             Insight(
                 rotulo = "Total de Registros",
                 valor = "$totalNotes notas",
-                iconResId = R.drawable.ic_active_days_24, // Use ic_launcher_foreground se não tiver este ícone
+                iconResId = R.drawable.ic_save_24, // Ícone genérico de 'salvar/registro' ou similar
                 backgroundColorResId = R.color.insight_neutral_bg
             ),
             Insight(
                 rotulo = "Melhor Dia",
                 valor = bestDay,
-                iconResId = R.drawable.ic_energetic_24, // Use ic_launcher_foreground se não tiver este ícone
-                backgroundColorResId = R.color.insight_energetic_bg
+                iconResId = R.drawable.ic_mood_rad, // Ícone de alta energia para representar o melhor dia
+                backgroundColorResId = R.color.insight_rad_bg
             )
         )
     }
 
     private fun calculateBestDay(notes: List<HumorNote>): String {
-        val positiveHumors = listOf("calm", "energetic", "feliz", "happy", "calmo", "energético")
+        // Lista expandida de humores positivos para o cálculo
+        val positiveHumors = listOf(
+            "rad", "happy", "grateful", "calm", "excellent", "good",
+            "energetic", "feliz", "bem", "calmo", "grato", "incrível", "excelente"
+        )
+
         val dayCounts = notes
             .filter { (it.humor?.lowercase() ?: "") in positiveHumors }
             .groupingBy {
@@ -143,20 +167,47 @@ class InsightsViewModel(
         return dayCounts.maxByOrNull { it.value }?.key ?: "N/A"
     }
 
-    private fun getIconAndColorForHumor(humorType: String): Pair<Int, Int> {
+    // Retorna Triple: IconRes, BgColorRes, LabelRes (LabelRes para uso futuro)
+    private fun getMoodConfig(humorType: String): Triple<Int, Int, Int> {
         return when (humorType.lowercase(Locale.ROOT)) {
-            "calm", "calmo" -> Pair(R.drawable.ic_calm_24, R.color.insight_calm_bg)
-            "energetic", "energético" -> Pair(R.drawable.ic_energetic_24, R.color.insight_energetic_bg)
-            "sad", "triste" -> Pair(R.drawable.ic_sad_24, R.color.insight_sad_bg)
-            "angry", "irritado" -> Pair(R.drawable.ic_angry_24, R.color.insight_angry_bg)
-            else -> Pair(R.drawable.ic_neutral_24, R.color.insight_neutral_bg)
+            // Alta Energia +
+            "rad", "incrível", "excellent", "energetic" ->
+                Triple(R.drawable.ic_mood_rad, R.color.insight_rad_bg, R.string.humor_rad)
+            "happy", "feliz", "good", "bem" ->
+                Triple(R.drawable.ic_mood_happy, R.color.insight_happy_bg, R.string.humor_happy)
+
+            // Baixa Energia +
+            "grateful", "grato" ->
+                Triple(R.drawable.ic_mood_grateful, R.color.insight_grateful_bg, R.string.humor_grateful)
+            "calm", "calmo" ->
+                Triple(R.drawable.ic_mood_calm, R.color.insight_calm_bg, R.string.humor_calm)
+
+            // Neutros
+            "neutral", "neutro" ->
+                Triple(R.drawable.ic_mood_neutral, R.color.insight_neutral_bg, R.string.humor_neutral)
+            "pensive", "pensativo" ->
+                Triple(R.drawable.ic_mood_pensive, R.color.insight_pensive_bg, R.string.humor_pensive)
+
+            // Baixa Energia -
+            "tired", "cansado" ->
+                Triple(R.drawable.ic_mood_tired, R.color.insight_tired_bg, R.string.humor_tired)
+            "sad", "triste" ->
+                Triple(R.drawable.ic_mood_sad, R.color.insight_sad_bg, R.string.humor_sad)
+
+            // Alta Energia -
+            "anxious", "ansioso" ->
+                Triple(R.drawable.ic_mood_anxious, R.color.insight_anxious_bg, R.string.humor_anxious)
+            "angry", "irritado" ->
+                Triple(R.drawable.ic_mood_angry, R.color.insight_angry_bg, R.string.humor_angry)
+
+            else -> Triple(R.drawable.ic_mood_neutral, R.color.insight_neutral_bg, R.string.humor_neutral)
         }
     }
 
-    private fun createEmptyInsight(msg: String) = Insight("Status", msg, R.drawable.ic_neutral_24, R.color.insight_neutral_bg)
+    private fun createEmptyInsight(msg: String) = Insight("Status", msg, R.drawable.ic_mood_neutral, R.color.insight_neutral_bg)
 }
 
-// --- A FACTORY TAMBÉM DEVE ESTAR AQUI ---
+// --- FACTORY ---
 class InsightsViewModelFactory(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository

@@ -6,67 +6,79 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginTop="12dp"
-    app:cardElevation="2dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
     app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
     app:strokeWidth="0dp"
-    android:background="?attr/colorSurfaceContainer">
+    android:backgroundTint="?attr/colorSurfaceContainer">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="16dp">
 
+        <ImageView
+            android:id="@+id/ivHumorIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            tools:src="@drawable/ic_mood_rad"
+            tools:tint="@color/mood_rad"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvHumor"
+            app:layout_constraintBottom_toBottomOf="@id/tvData"
+            android:contentDescription="@null" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnEdit"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="0dp"
-            android:paddingHorizontal="16dp"
-            android:text="Editar"
-            android:textColor="?attr/colorPrimary"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_edit_24"
+            app:iconTint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/action_edit_profile"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toTopOf="@id/tvDescricao"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/tvHumor"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            tools:text="Humor: Excelente"
-            android:textColor="?attr/colorPrimary"
+            tools:text="Incrível"
+            android:textColor="?attr/colorOnSurface"
             android:textSize="20sp"
             android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/ivHumorIcon"
             app:layout_constraintEnd_toStartOf="@id/btnEdit"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@id/btnEdit"
-            app:layout_constraintBottom_toBottomOf="@id/btnEdit"/>
-
-        <TextView
-            android:id="@+id/tvDescricao"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            tools:text="O dia foi muito produtivo e me senti com muita energia."
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnEdit" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/tvData"
+            app:layout_constraintVertical_chainStyle="packed"/>
 
         <TextView
             android:id="@+id/tvData"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            tools:text="Registrado em: 15/10/2025 - 14:30"
-            android:textColor="?attr/colorSecondary"
+            tools:text="15/10/2025 • 14:30"
+            android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toStartOf="@id/tvHumor"
+            app:layout_constraintEnd_toEndOf="@id/tvHumor"
+            app:layout_constraintTop_toBottomOf="@id/tvHumor" />
+
+        <TextView
+            android:id="@+id/tvDescricao"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            tools:text="O dia foi muito produtivo e me senti com muita energia."
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
+            android:lineSpacingExtra="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvDescricao" />
+            app:layout_constraintTop_toBottomOf="@id/ivHumorIcon" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

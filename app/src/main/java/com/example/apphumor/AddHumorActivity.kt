@@ -13,7 +13,6 @@ import com.example.apphumor.models.HumorNote
 import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.example.apphumor.viewmodel.AddHumorViewModelFactory
 import com.example.apphumor.viewmodel.SaveState
-import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
 
 class AddHumorActivity : AppCompatActivity() {
@@ -37,43 +36,62 @@ class AddHumorActivity : AppCompatActivity() {
 
         existingNote = intent.getParcelableExtra("EDIT_NOTE")
 
-        setupHumorButtons()
+        setupChipGroup()
         setupSaveButton()
         loadExistingNote()
         setupSaveStatusObserver()
     }
 
-    private fun setupHumorButtons() {
-        val buttons = listOf(
-            binding.btnCalm, binding.btnEnergetic,
-            binding.btnSad, binding.btnAngry, binding.btnNeutral
-        )
-
-        buttons.forEach { button ->
-            button.setOnClickListener {
-                selectedHumor = when (button.id) {
-                    R.id.btn_calm -> "Calm"
-                    R.id.btn_energetic -> "Energetic"
-                    R.id.btn_sad -> "Sad"
-                    R.id.btn_angry -> "Angry"
-                    else -> "Neutral"
+    // Configura a seleção dos 10 novos humores
+    private fun setupChipGroup() {
+        binding.cgHumor.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isNotEmpty()) {
+                val chipId = checkedIds[0]
+                selectedHumor = when (chipId) {
+                    R.id.chip_rad -> "Rad"
+                    R.id.chip_happy -> "Happy"
+                    R.id.chip_grateful -> "Grateful"
+                    R.id.chip_calm -> "Calm"
+                    R.id.chip_neutral -> "Neutral"
+                    R.id.chip_pensive -> "Pensive"
+                    R.id.chip_tired -> "Tired"
+                    R.id.chip_sad -> "Sad"
+                    R.id.chip_anxious -> "Anxious"
+                    R.id.chip_angry -> "Angry"
+                    else -> null
                 }
-                buttons.forEach { it.isChecked = (it == button) }
+            } else {
+                selectedHumor = null
             }
         }
     }
 
     private fun loadExistingNote() {
         existingNote?.let { note ->
-            val buttonId = when (note.humor) {
-                "Calm" -> R.id.btn_calm
-                "Energetic" -> R.id.btn_energetic
-                "Sad" -> R.id.btn_sad
-                "Angry" -> R.id.btn_angry
-                else -> R.id.btn_neutral
+            val chipId = when (note.humor) {
+                // Novos Mapeamentos
+                "Rad" -> R.id.chip_rad
+                "Happy" -> R.id.chip_happy
+                "Grateful" -> R.id.chip_grateful
+                "Calm" -> R.id.chip_calm
+                "Neutral" -> R.id.chip_neutral
+                "Pensive" -> R.id.chip_pensive
+                "Tired" -> R.id.chip_tired
+                "Sad" -> R.id.chip_sad
+                "Anxious" -> R.id.chip_anxious
+                "Angry" -> R.id.chip_angry
+
+                // Compatibilidade com registros antigos (Legacy)
+                "Excellent", "Incrível" -> R.id.chip_rad
+                "Good", "Bem" -> R.id.chip_happy
+                "Energetic", "Energético" -> R.id.chip_rad // Promovido para Rad
+                "Irritado" -> R.id.chip_angry
+                "Triste" -> R.id.chip_sad
+                else -> R.id.chip_neutral // Fallback seguro
             }
-            // Simula clique para selecionar visualmente e setar a variável
-            findViewById<MaterialButton>(buttonId)?.performClick()
+
+            // Marca o chip correspondente
+            binding.cgHumor.check(chipId)
 
             binding.etNotes.setText(note.descricao)
             binding.tvTitle.text = getString(R.string.add_humor_edit_title)
@@ -95,10 +113,11 @@ class AddHumorActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            // Cria ou atualiza o objeto HumorNote
             val note = existingNote?.copy(
                 humor = humor,
                 descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() },
-                // Mantém o timestamp original se for edição
+                // Mantém timestamp original se for edição
                 timestamp = existingNote?.timestamp ?: System.currentTimeMillis()
             ) ?: HumorNote(
                 timestamp = System.currentTimeMillis(),
@@ -143,7 +162,7 @@ class AddHumorActivity : AppCompatActivity() {
                         viewModel.resetSaveStatus()
                     }
                     is SaveState.Error -> {
-                        showToast(state.message) // Mensagem de erro do VM (pode ser técnica)
+                        showToast(state.message)
                         binding.btnSave.isEnabled = true
                         viewModel.resetSaveStatus()
                     }
@@ -151,7 +170,6 @@ class AddHumorActivity : AppCompatActivity() {
             }
         }
     }
-
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
