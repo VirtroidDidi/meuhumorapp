@@ -34,7 +34,8 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_cloud_off_24"
-                app:tint="@color/status_offline_text" />
+                app:tint="@color/status_offline_text"
+                android:contentDescription="@null" />
 
             <TextView
                 android:id="@+id/tvStatusText"
@@ -54,10 +55,8 @@
         android:layout_height="0dp"
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cvConnectionStatus"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintTop_toBottomOf="@+id/cvConnectionStatus" />
 
     <LinearLayout
         android:id="@+id/bottomNav"
@@ -66,46 +65,57 @@
         android:orientation="horizontal"
         android:gravity="center"
         android:background="?attr/colorSurfaceContainerHigh"
-        android:elevation="8dp"
-        android:paddingVertical="4dp"
+        android:elevation="16dp"
+        android:paddingVertical="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_hoje"
-            style="@style/Widget.Material3.Button.TextButton.Icon"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/nav_home"
+            android:textSize="12sp"
             app:icon="@drawable/ic_home_24"
-            android:textColor="@color/bottom_nav_selector"
-            app:iconTint="@color/bottom_nav_selector"
+            app:iconGravity="textTop"
+            app:iconSize="24dp"
+            android:textColor="@color/nav_item_colors"
+            app:iconTint="@color/nav_item_colors"
             android:checkable="true"
             android:checked="true" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_historico"
-            style="@style/Widget.Material3.Button.TextButton.Icon"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/nav_history"
+            android:textSize="12sp"
             app:icon="@drawable/ic_historico_24"
-            android:textColor="@color/bottom_nav_selector"
-            app:iconTint="@color/bottom_nav_selector"
+            app:iconGravity="textTop"
+            app:iconSize="24dp"
+            android:textColor="@color/nav_item_colors"
+            app:iconTint="@color/nav_item_colors"
             android:checkable="true"
             android:checked="false" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_usuario"
-            style="@style/Widget.Material3.Button.TextButton.Icon"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/nav_profile"
+            android:textSize="12sp"
             app:icon="@drawable/ic_usuario_24"
-            android:textColor="@color/bottom_nav_selector"
-            app:iconTint="@color/bottom_nav_selector"
+            app:iconGravity="textTop"
+            app:iconSize="24dp"
+            android:textColor="@color/nav_item_colors"
+            app:iconTint="@color/nav_item_colors"
             android:checkable="true"
             android:checked="false" />
 

@@ -5,14 +5,28 @@
     <color name="teal_700">#FF018786</color>
 
     <color name="primary_color">#FFB3ADD9</color>
-    <color name="on_primary_color">#FF0D0D0D</color>
+    <color name="on_primary_color">#FF1A1A1A</color>
+    <color name="primary_container">#F0EEF9</color> <color name="on_primary_container">#FF1A1A1A</color>
+
     <color name="secondary_color">#FF377769</color>
     <color name="on_secondary_color">#FFFFFFFF</color>
+    <color name="secondary_container">#E0F2F1</color> <color name="on_secondary_container">#FF051F19</color>
+
     <color name="background_light">#FFF9F4EF</color>
-    <color name="surface_light">#FFFFFFFF</color>
-    <color name="surface_container_light">#FFF2EBE3</color>
+    <color name="surface_light">#FFF9F4EF</color>
+
+    <color name="surface_container_low">#FFF2EBE3</color>     <color name="surface_container">#FFEDE7F6</color>         <color name="surface_container_high">#FFFFFFFF</color>    <color name="surface_container_highest">#E6E1E5</color>
+
+    <color name="on_surface">#FF1C1B1F</color>       <color name="on_surface_variant">#FF49454F</color> <color name="outline">#FF79747E</color>
+    <color name="outline_variant">#FFCAC4D0</color>
+
+    <color name="error_color">#B3261E</color>
+    <color name="on_error_color">#FFFFFF</color>
+
     <color name="accent_yellow">#FFF2C849</color>
     <color name="accent_coral">#FFF27244</color>
+    <color name="bottom_nav_indicator">#E8DEF8</color>
+
     <color name="dark_background">#FF1A1A1A</color>
     <color name="dark_surface">#FF2A2A2A</color>
     <color name="on_dark_surface">#FFF9F4EF</color>
@@ -21,7 +35,18 @@
     <color name="status_offline_text">#FFFFFF</color>
     <color name="status_syncing_bg">#FFB300</color>
 
-    <color name="mood_rad">#FFD700</color>    <color name="mood_happy">#FFA726</color>  <color name="mood_grateful">#66BB6A</color> <color name="mood_calm">#26A69A</color>     <color name="mood_neutral">#9E9E9E</color>  <color name="mood_pensive">#7E57C2</color>  <color name="mood_tired">#3F51B5</color>    <color name="mood_sad">#2196F3</color>      <color name="mood_anxious">#FF7043</color>  <color name="mood_angry">#EF5350</color>    <color name="insight_rad_bg">#FFF8E1</color>
+    <color name="mood_rad">#FFD700</color>
+    <color name="mood_happy">#FFA726</color>
+    <color name="mood_grateful">#66BB6A</color>
+    <color name="mood_calm">#26A69A</color>
+    <color name="mood_neutral">#9E9E9E</color>
+    <color name="mood_pensive">#7E57C2</color>
+    <color name="mood_tired">#3F51B5</color>
+    <color name="mood_sad">#2196F3</color>
+    <color name="mood_anxious">#FF7043</color>
+    <color name="mood_angry">#EF5350</color>
+
+    <color name="insight_rad_bg">#FFF8E1</color>
     <color name="insight_happy_bg">#FFF3E0</color>
     <color name="insight_grateful_bg">#E8F5E9</color>
     <color name="insight_calm_bg">#E0F2F1</color>
@@ -31,7 +56,5 @@
     <color name="insight_sad_bg">#E3F2FD</color>
     <color name="insight_anxious_bg">#FBE9E7</color>
     <color name="insight_angry_bg">#FFEBEE</color>
-
     <color name="insight_energetic_bg">#FFF8E1</color>
-
 </resources>

@@ -6,22 +6,25 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:contentPadding="16dp">
+    android:layout_marginBottom="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tv_sequence_days"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="32sp"
+            android:textSize="48sp"
             android:textStyle="bold"
             android:textColor="?attr/colorPrimary"
+            android:includeFontPadding="false"
             tools:text="5"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -32,36 +35,40 @@
             android:layout_height="wrap_content"
             android:text="@string/progress_label_days"
             android:textSize="14sp"
-            android:textColor="?android:attr/textColorSecondary"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_sequence_days" />
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintStart_toEndOf="@id/tv_sequence_days"
+            app:layout_constraintBaseline_toBaselineOf="@id/tv_sequence_days"/>
 
         <TextView
             android:id="@+id/tv_sequence_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
+            android:layout_marginStart="24dp"
             android:text="@string/sequence_default"
-            android:textSize="16sp"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintStart_toEndOf="@+id/tv_sequence_days"
-            app:layout_constraintTop_toTopOf="@+id/tv_sequence_days"
-            app:layout_constraintBottom_toTopOf="@+id/progress_bar"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintStart_toEndOf="@+id/tv_label_days"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
 
         <ProgressBar
             android:id="@+id/progress_bar"
             style="@style/Widget.AppCompat.ProgressBar.Horizontal"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="4dp"
+            android:layout_height="4dp"
+            android:layout_marginTop="16dp"
             android:max="7"
             android:progress="5"
             android:progressTint="?attr/colorPrimary"
-            app:layout_constraintBottom_toBottomOf="@+id/tv_label_days"
-            app:layout_constraintStart_toEndOf="@+id/tv_sequence_days"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            android:progressBackgroundTint="?attr/colorSurfaceContainerHighest"
+            app:layout_constraintTop_toBottomOf="@+id/tv_sequence_days"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

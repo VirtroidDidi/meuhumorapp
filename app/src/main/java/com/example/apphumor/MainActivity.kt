@@ -1,6 +1,7 @@
 package com.example.apphumor
 
 import android.Manifest
+import android.animation.LayoutTransition
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -8,7 +9,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.animation.LayoutTransition
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -38,18 +38,14 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     // Lançador de permissão para Notificações (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        // Se concedido ou não, o fluxo segue. O Worker verifica antes de enviar.
-    }
+    ) { _ -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Animações de layout suaves (ex: quando a barra offline aparece)
         binding.root.layoutTransition = LayoutTransition()
-
         auth = FirebaseAuth.getInstance()
 
         if (savedInstanceState == null) {
@@ -80,17 +76,44 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
             .hide(historyFragment)
             .commit()
         activeFragment = homeFragment
+
+        // Garante que o botão inicial esteja visualmente selecionado na cor correta
+        updateNavigationState(R.id.btn_hoje)
     }
 
     private fun setupNavigationButtons() {
         binding.btnHoje.setOnClickListener {
-            if (activeFragment != homeFragment) showFragment(homeFragment)
+            if (activeFragment != homeFragment) {
+                showFragment(homeFragment)
+                updateNavigationState(R.id.btn_hoje)
+            }
         }
         binding.btnUsuario.setOnClickListener {
-            if (activeFragment != profileFragment) showFragment(profileFragment)
+            if (activeFragment != profileFragment) {
+                showFragment(profileFragment)
+                updateNavigationState(R.id.btn_usuario)
+            }
         }
         binding.btnHistorico.setOnClickListener {
-            if (activeFragment != historyFragment) showFragment(historyFragment)
+            if (activeFragment != historyFragment) {
+                showFragment(historyFragment)
+                updateNavigationState(R.id.btn_historico)
+            }
+        }
+    }
+
+    // --- NOVA FUNÇÃO: Gerencia a lógica visual dos botões ---
+    private fun updateNavigationState(activeButtonId: Int) {
+        // Lista com todos os botões da barra
+        val buttons = listOf(binding.btnHoje, binding.btnHistorico, binding.btnUsuario)
+
+        buttons.forEach { button ->
+            val isActive = button.id == activeButtonId
+            // Define o estado 'checked'. O XML nav_item_colors usará isso para trocar a cor.
+            button.isChecked = isActive
+
+            // Opcional: Impede clicar no botão que já está ativo
+            button.isClickable = !isActive
         }
     }
 
@@ -128,18 +151,15 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
             binding.cvConnectionStatus.setCardBackgroundColor(
                 ContextCompat.getColor(this, R.color.status_offline_bg)
             )
-            // USO DE STRING INTERNACIONALIZADA
             binding.tvStatusText.text = getString(R.string.status_offline)
             binding.ivStatusIcon.setImageResource(R.drawable.ic_cloud_off_24)
         }
     }
 
-    // Método utilitário acessível pelos fragmentos se necessário
     fun isNetworkConnected(): Boolean {
         return isConnected
     }
 
-    // Implementação da interface do ProfileFragment para Logout
     override fun onLogoutSuccess() {
         val intent = Intent(this, LoginActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

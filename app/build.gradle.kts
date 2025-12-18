@@ -42,6 +42,9 @@ android {
 
 dependencies {
 
+
+    implementation(libs.material)
+
     // WorkManager (Para agendamento de tarefas em background)
     implementation(libs.androidx.work.runtime.ktx)
 

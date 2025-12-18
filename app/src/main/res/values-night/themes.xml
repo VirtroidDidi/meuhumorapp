@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema Acolhedor e Moderno (Material 3 - Dark) -->
     <style name="Theme.AppHumor" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Cores Principais -->
         <item name="colorPrimary">@color/primary_color</item>
         <item name="colorOnPrimary">@color/on_dark_surface</item>
+
         <item name="colorSecondary">@color/secondary_color</item>
         <item name="colorOnSecondary">@color/on_dark_surface</item>
 
-        <!-- Fundo da tela e Superfície dos elementos -->
+        <item name="android:colorBackground">@color/dark_background</item>
         <item name="colorSurface">@color/dark_surface</item>
         <item name="colorOnSurface">@color/white</item>
-        <item name="android:windowBackground">@color/dark_background</item>
+        <item name="colorOnSurfaceVariant">@color/on_dark_surface</item>
+        <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
 
-        <!-- Componentes de Sistema -->
-        <item name="android:statusBarColor">@color/primary_color</item>
-        <item name="android:navigationBarColor">@color/dark_surface</item>
+        <item name="colorSurfaceContainerHigh">#FF2D2D2D</item>
+        <item name="colorSurfaceContainerLow">#FF1F1F1F</item>
+        <item name="colorSurfaceContainer">@color/dark_surface</item>
+
+        <item name="android:statusBarColor">@color/dark_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:navigationBarColor">#FF2D2D2D</item>
     </style>
-    <!-- Os estilos de botões (AppButton, AppOutlinedButton) serão herdados
-         do themes.xml padrão e usarão as cores definidas no colors.xml para o tema escuro. -->
 </resources>
