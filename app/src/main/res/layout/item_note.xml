@@ -57,15 +57,25 @@
 
         <TextView
             android:id="@+id/tvData"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             tools:text="15/10/2025 • 14:30"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="12sp"
             android:layout_marginTop="2dp"
             app:layout_constraintStart_toStartOf="@id/tvHumor"
-            app:layout_constraintEnd_toEndOf="@id/tvHumor"
             app:layout_constraintTop_toBottomOf="@id/tvHumor" />
+
+        <ImageView
+            android:id="@+id/ivSyncStatus"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="8dp"
+            android:src="@drawable/ic_status_pending"
+            android:contentDescription="Status de sincronização"
+            app:layout_constraintStart_toEndOf="@id/tvData"
+            app:layout_constraintBottom_toBottomOf="@id/tvData"
+            app:layout_constraintTop_toTopOf="@id/tvData" />
 
         <TextView
             android:id="@+id/tvDescricao"

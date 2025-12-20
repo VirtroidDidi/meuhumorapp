@@ -49,75 +49,30 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <FrameLayout
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragmentContainerMain"
+        android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph"
         app:layout_constraintBottom_toTopOf="@id/bottomNav"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/cvConnectionStatus" />
 
-    <LinearLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
         android:background="?attr/colorSurfaceContainerHigh"
         android:elevation="16dp"
-        android:paddingVertical="8dp"
+        app:menu="@menu/bottom_nav_menu"
+        app:itemIconTint="@color/nav_item_colors"
+        app:itemTextColor="@color/nav_item_colors"
+        app:labelVisibilityMode="labeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_hoje"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/nav_home"
-            android:textSize="12sp"
-            app:icon="@drawable/ic_home_24"
-            app:iconGravity="textTop"
-            app:iconSize="24dp"
-            android:textColor="@color/nav_item_colors"
-            app:iconTint="@color/nav_item_colors"
-            android:checkable="true"
-            android:checked="true" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_historico"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/nav_history"
-            android:textSize="12sp"
-            app:icon="@drawable/ic_historico_24"
-            app:iconGravity="textTop"
-            app:iconSize="24dp"
-            android:textColor="@color/nav_item_colors"
-            app:iconTint="@color/nav_item_colors"
-            android:checkable="true"
-            android:checked="false" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_usuario"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/nav_profile"
-            android:textSize="12sp"
-            app:icon="@drawable/ic_usuario_24"
-            app:iconGravity="textTop"
-            app:iconSize="24dp"
-            android:textColor="@color/nav_item_colors"
-            app:iconTint="@color/nav_item_colors"
-            android:checkable="true"
-            android:checked="false" />
-
-    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

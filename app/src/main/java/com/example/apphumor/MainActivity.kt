@@ -1,6 +1,5 @@
 package com.example.apphumor
 
-import android.Manifest
 import android.animation.LayoutTransition
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,7 +11,8 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.example.apphumor.databinding.ActivityMainBinding
 import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
@@ -26,12 +26,6 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
 
-    // Fragmentos instanciados
-    private val homeFragment = HomeFragment()
-    private val profileFragment = ProfileFragment()
-    private val historyFragment = HistoryFragment()
-
-    private var activeFragment: Fragment? = null
     private val handler = Handler(Looper.getMainLooper())
     private var isConnected = false
 
@@ -48,86 +42,33 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         binding.root.layoutTransition = LayoutTransition()
         auth = FirebaseAuth.getInstance()
 
-        if (savedInstanceState == null) {
-            showInitialFragment()
-        }
-
-        setupNavigationButtons()
+        setupNavigation()
         setupConnectionMonitor()
         askNotificationPermission()
     }
 
+    private fun setupNavigation() {
+        // Encontra o NavHostFragment que definimos no XML
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.fragmentContainerMain) as NavHostFragment
+
+        // Pega o controlador de navegação
+        val navController = navHostFragment.navController
+
+        // Conecta a BottomNavigationView com o NavController
+        // A mágica acontece aqui: como os IDs do menu batem com o gráfico,
+        // ele navega automaticamente!
+        binding.bottomNav.setupWithNavController(navController)
+    }
+
     private fun askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED
             ) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-    }
-
-    private fun showInitialFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.fragmentContainerMain, homeFragment, "fragment_home")
-            .add(R.id.fragmentContainerMain, profileFragment, "fragment_profile")
-            .add(R.id.fragmentContainerMain, historyFragment, "fragment_history")
-            .hide(profileFragment)
-            .hide(historyFragment)
-            .commit()
-        activeFragment = homeFragment
-
-        // Garante que o botão inicial esteja visualmente selecionado na cor correta
-        updateNavigationState(R.id.btn_hoje)
-    }
-
-    private fun setupNavigationButtons() {
-        binding.btnHoje.setOnClickListener {
-            if (activeFragment != homeFragment) {
-                showFragment(homeFragment)
-                updateNavigationState(R.id.btn_hoje)
-            }
-        }
-        binding.btnUsuario.setOnClickListener {
-            if (activeFragment != profileFragment) {
-                showFragment(profileFragment)
-                updateNavigationState(R.id.btn_usuario)
-            }
-        }
-        binding.btnHistorico.setOnClickListener {
-            if (activeFragment != historyFragment) {
-                showFragment(historyFragment)
-                updateNavigationState(R.id.btn_historico)
-            }
-        }
-    }
-
-    // --- NOVA FUNÇÃO: Gerencia a lógica visual dos botões ---
-    private fun updateNavigationState(activeButtonId: Int) {
-        // Lista com todos os botões da barra
-        val buttons = listOf(binding.btnHoje, binding.btnHistorico, binding.btnUsuario)
-
-        buttons.forEach { button ->
-            val isActive = button.id == activeButtonId
-            // Define o estado 'checked'. O XML nav_item_colors usará isso para trocar a cor.
-            button.isChecked = isActive
-
-            // Opcional: Impede clicar no botão que já está ativo
-            button.isClickable = !isActive
-        }
-    }
-
-    private fun showFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction().apply {
-            activeFragment?.let { hide(it) }
-            if (fragment.isAdded) {
-                show(fragment)
-            } else {
-                add(R.id.fragmentContainerMain, fragment, fragment.tag)
-            }
-            commit()
-        }
-        activeFragment = fragment
     }
 
     private fun setupConnectionMonitor() {

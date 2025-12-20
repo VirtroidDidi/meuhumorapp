@@ -34,6 +34,7 @@ constraintlayout = "2.1.4"
 materialVersion = "1.11.0"
 firebaseDatabaseKtx = "21.0.0"
 firebaseCommonKtx = "21.0.0"
+navigationFragmentKtx = "2.9.6"
 recyclerview = "1.4.0"
 workRuntimeKtx = "2.11.0"
 
@@ -51,6 +52,8 @@ androidx-credentials-v110 = { module = "androidx.credentials:credentials", versi
 androidx-espresso-core-v361 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
 androidx-junit-v121 = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleViewmodelKtx" }
+androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigationFragmentKtx" }
+androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigationFragmentKtx" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 com-google-firebase-firebase-auth-ktx = { module = "com.google.firebase:firebase-auth-ktx" }

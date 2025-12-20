@@ -60,7 +60,6 @@
             android:backgroundTint="?attr/colorSurfaceContainerHigh"
             app:cornerRadius="12dp"
             android:tooltipText="@string/filter_title"/>
-
     </LinearLayout>
 
     <TextView
@@ -104,10 +103,11 @@
         app:layout_constraintTop_toBottomOf="@id/top_bar_container">
 
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:src="@drawable/ic_search_24"
-            app:tint="?attr/colorOutline"/>
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:src="@drawable/illustration_empty"
+            android:alpha="0.8"
+            android:contentDescription="@null"/>
 
         <TextView
             android:id="@+id/tv_empty_message"
@@ -115,9 +115,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/history_no_records_found"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/darker_gray"/>
+            android:textColor="?attr/colorOnSurfaceVariant"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

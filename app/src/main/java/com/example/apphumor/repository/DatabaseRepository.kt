@@ -1,5 +1,3 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/repository/DatabaseRepository.kt
-
 package com.example.apphumor.repository
 
 import android.util.Log
@@ -12,71 +10,17 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.TimeoutCancellationException
 
 class DatabaseRepository {
-    // Referência raiz do banco de dados
     private val db = FirebaseDatabase.getInstance().getReference("users")
     private val TAG = "DatabaseRepository"
 
-    // --- Modelos de Resposta ---
     sealed class Result<out T> {
         data class Success<out T>(val data: T) : Result<T>()
         data class Error(val exception: Exception) : Result<Nothing>()
     }
 
-    // --- Notas de Humor (COM PROTEÇÃO OFFLINE) ---
-
-    suspend fun updateHumorNote(userId: String, note: HumorNote): Result<Unit> {
-        return try {
-            // CORREÇÃO DO ERRO SMART CAST:
-            // Jogamos o valor para uma variável local 'noteId'.
-            // O operador ?: lança a exceção se for nulo.
-            val noteId = note.id ?: throw Exception("ID da nota é nulo na atualização.")
-
-            try {
-                withTimeout(2000L) {
-                    // Agora usamos 'noteId' (variável local) em vez de 'note.id'
-                    db.child(userId).child("notes").child(noteId)
-                        .setValue(note)
-                        .await()
-                }
-            } catch (e: TimeoutCancellationException) {
-                Log.w(TAG, "Timeout no update (Offline): Seguindo com dados locais.")
-            }
-
-            Result.Success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro crítico ao atualizar nota: ${e.message}")
-            Result.Error(e)
-        }
-    }
-
-    suspend fun saveHumorNote(userId: String, note: HumorNote): Result<String> {
-        return try {
-            val noteRef = db.child(userId).child("notes").push()
-            val newId = noteRef.key ?: throw Exception("Falha ao gerar chave no Firebase.")
-
-            val noteWithId = note.copy(id = newId, userId = userId)
-
-            try {
-                withTimeout(2000L) {
-                    noteRef.setValue(noteWithId).await()
-                }
-            } catch (e: TimeoutCancellationException) {
-                Log.w(TAG, "Timeout no save (Offline): Seguindo com dados locais.")
-            }
-
-            Result.Success(newId)
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro crítico ao salvar nota: ${e.message}")
-            Result.Error(e)
-        }
-    }
-
-    // --- Leitura em Tempo Real ---
-
+    // --- LEITURA INTELIGENTE ---
     fun getHumorNotesAsLiveData(userId: String): LiveData<List<HumorNote>> {
         val liveData = MutableLiveData<List<HumorNote>>()
 
@@ -84,13 +28,29 @@ class DatabaseRepository {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val notes = snapshot.children.mapNotNull { child ->
                     val rawNote = child.getValue(HumorNote::class.java)
+
                     rawNote?.let { note ->
+                        // Lógica de Compatibilidade:
+                        // Se o banco tem "isSynced", usamos o valor real.
+                        // Se NÃO tem (nota antiga), assumimos TRUE (Sincronizado).
+                        val realSyncStatus = if (child.hasChild("isSynced")) {
+                            note.isSynced
+                        } else {
+                            true
+                        }
+
+                        // Ajuste de timestamp legado (se existir)
                         var correctTimestamp = note.timestamp
                         if (correctTimestamp == 0L) {
                             val legacyTime = note.data?.get("time") as? Long
                             if (legacyTime != null) correctTimestamp = legacyTime
                         }
-                        note.copy(id = child.key, timestamp = correctTimestamp)
+
+                        note.copy(
+                            id = child.key,
+                            timestamp = correctTimestamp,
+                            isSynced = realSyncStatus
+                        )
                     }
                 }
                 liveData.postValue(notes.sortedByDescending { it.timestamp })
@@ -104,39 +64,68 @@ class DatabaseRepository {
         return liveData
     }
 
-    // --- Gestão de Usuário (CORRIGIDO SMART CAST TAMBÉM) ---
-
-    suspend fun saveUser(user: User): Result<Unit> {
-        // CORREÇÃO: Variável local segura 'uid'
-        val uid = user.uid ?: return Result.Error(Exception("UID do usuário é nulo"))
-
+    // --- ESCRITA OFFLINE-FIRST ---
+    suspend fun saveHumorNote(userId: String, note: HumorNote): Result<String> {
         return try {
-            // Usando a variável local 'uid'
-            db.child(uid).setValue(user).await()
+            val noteRef = db.child(userId).child("notes").push()
+            val newId = noteRef.key ?: throw Exception("Falha ao gerar chave.")
+
+            // 1. Salva como FALSE (Pendente) -> Ícone Cinza imediato
+            val noteToSave = note.copy(id = newId, userId = userId, isSynced = false)
+
+            noteRef.setValue(noteToSave).addOnSuccessListener {
+                // 2. Callback do Servidor: Atualiza para TRUE -> Ícone Azul
+                noteRef.child("isSynced").setValue(true)
+            }
+
+            Result.Success(newId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao salvar: ${e.message}")
+            Result.Error(e)
+        }
+    }
+
+    suspend fun updateHumorNote(userId: String, note: HumorNote): Result<Unit> {
+        return try {
+            val noteId = note.id ?: throw Exception("ID nulo.")
+
+            // Ao editar, volta a ser pendente (check cinza) até confirmar
+            val notePending = note.copy(isSynced = false)
+            val ref = db.child(userId).child("notes").child(noteId)
+
+            ref.setValue(notePending).addOnSuccessListener {
+                // Confirmou edição -> check azul
+                ref.child("isSynced").setValue(true)
+            }
+
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e)
         }
     }
 
+    // --- Outros Métodos (User, OneShot) mantidos ---
+    suspend fun saveUser(user: User): Result<Unit> {
+        val uid = user.uid ?: return Result.Error(Exception("UID nulo"))
+        return try {
+            db.child(uid).setValue(user)
+            Result.Success(Unit)
+        } catch (e: Exception) { Result.Error(e) }
+    }
+
     suspend fun updateUser(user: User): Result<Unit> {
         val uid = user.uid ?: return Result.Error(IllegalArgumentException("UID nulo."))
-
         return try {
             val updates = mapOf<String, Any?>(
                 "nome" to user.nome,
                 "idade" to user.idade,
                 "email" to user.email,
-                // --- NOVOS CAMPOS ADICIONADOS ---
                 "notificacaoAtiva" to user.notificacaoAtiva,
                 "horarioNotificacao" to user.horarioNotificacao
             )
-
-            db.child(uid).updateChildren(updates).await()
+            db.child(uid).updateChildren(updates)
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e)
-        }
+        } catch (e: Exception) { Result.Error(e) }
     }
 
     suspend fun getUser(userId: String): Result<User?> {
@@ -144,24 +133,16 @@ class DatabaseRepository {
             val snapshot = db.child(userId).get().await()
             val user = snapshot.getValue(User::class.java)
             Result.Success(user?.copy(uid = snapshot.key))
-        } catch (e: Exception) {
-            Result.Error(e)
-        }
+        } catch (e: Exception) { Result.Error(e) }
     }
-    // Adicionar dentro da classe DatabaseRepository
 
     suspend fun getHumorNotesOnce(userId: String): List<HumorNote> {
         return try {
-            // .get() faz uma leitura única (One-Shot)
             val snapshot = db.child(userId).child("notes").get().await()
-
             snapshot.children.mapNotNull { child ->
                 val rawNote = child.getValue(HumorNote::class.java)
-                rawNote?.copy(id = child.key) // Garante que o ID venha junto
+                rawNote?.copy(id = child.key)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro na leitura one-shot: ${e.message}")
-            emptyList()
-        }
+        } catch (e: Exception) { emptyList() }
     }
 }

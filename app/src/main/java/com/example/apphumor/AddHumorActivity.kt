@@ -2,6 +2,9 @@ package com.example.apphumor
 
 import android.app.Activity
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -10,9 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import com.example.apphumor.databinding.ActivityAddHumorBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.utils.hideKeyboard
 import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.example.apphumor.viewmodel.AddHumorViewModelFactory
 import com.example.apphumor.viewmodel.SaveState
+import com.google.android.material.snackbar.Snackbar // Import do Snackbar
 import kotlinx.coroutines.launch
 
 class AddHumorActivity : AppCompatActivity() {
@@ -40,11 +45,18 @@ class AddHumorActivity : AppCompatActivity() {
         setupSaveButton()
         loadExistingNote()
         setupSaveStatusObserver()
+
+        // UX Extra: Clicar fora do campo de texto fecha o teclado
+        binding.root.setOnClickListener {
+            binding.root.hideKeyboard()
+        }
     }
 
-    // Configura a seleção dos 10 novos humores
     private fun setupChipGroup() {
         binding.cgHumor.setOnCheckedStateChangeListener { _, checkedIds ->
+            // UX: Esconde o teclado se o usuário for selecionar o humor
+            binding.root.hideKeyboard()
+
             if (checkedIds.isNotEmpty()) {
                 val chipId = checkedIds[0]
                 selectedHumor = when (chipId) {
@@ -69,7 +81,6 @@ class AddHumorActivity : AppCompatActivity() {
     private fun loadExistingNote() {
         existingNote?.let { note ->
             val chipId = when (note.humor) {
-                // Novos Mapeamentos
                 "Rad" -> R.id.chip_rad
                 "Happy" -> R.id.chip_happy
                 "Grateful" -> R.id.chip_grateful
@@ -80,19 +91,15 @@ class AddHumorActivity : AppCompatActivity() {
                 "Sad" -> R.id.chip_sad
                 "Anxious" -> R.id.chip_anxious
                 "Angry" -> R.id.chip_angry
-
-                // Compatibilidade com registros antigos (Legacy)
+                // Legado
                 "Excellent", "Incrível" -> R.id.chip_rad
                 "Good", "Bem" -> R.id.chip_happy
-                "Energetic", "Energético" -> R.id.chip_rad // Promovido para Rad
+                "Energetic", "Energético" -> R.id.chip_rad
                 "Irritado" -> R.id.chip_angry
                 "Triste" -> R.id.chip_sad
-                else -> R.id.chip_neutral // Fallback seguro
+                else -> R.id.chip_neutral
             }
-
-            // Marca o chip correspondente
             binding.cgHumor.check(chipId)
-
             binding.etNotes.setText(note.descricao)
             binding.tvTitle.text = getString(R.string.add_humor_edit_title)
         }
@@ -100,24 +107,25 @@ class AddHumorActivity : AppCompatActivity() {
 
     private fun setupSaveButton() {
         binding.btnSave.setOnClickListener {
+            // UX CRÍTICA: Fechar teclado imediatamente ao clicar em salvar
+            binding.root.hideKeyboard()
+
             val user = DependencyProvider.auth.currentUser
             val humor = selectedHumor
 
             if (humor == null) {
-                showToast(getString(R.string.error_select_humor))
+                showSnackbar(getString(R.string.error_select_humor), isError = true)
                 return@setOnClickListener
             }
 
             if (user == null) {
-                showToast(getString(R.string.error_user_not_auth))
+                showSnackbar(getString(R.string.error_user_not_auth), isError = true)
                 return@setOnClickListener
             }
 
-            // Cria ou atualiza o objeto HumorNote
             val note = existingNote?.copy(
                 humor = humor,
                 descricao = binding.etNotes.text.toString().takeIf { it.isNotEmpty() },
-                // Mantém timestamp original se for edição
                 timestamp = existingNote?.timestamp ?: System.currentTimeMillis()
             ) ?: HumorNote(
                 timestamp = System.currentTimeMillis(),
@@ -151,10 +159,12 @@ class AddHumorActivity : AppCompatActivity() {
                         else
                             getString(R.string.msg_record_saved)
 
+                        // Se estiver offline, usamos uma mensagem especial
+                        // O Toast é melhor aqui porque a Activity vai fechar logo em seguida
                         if (isOffline) {
-                            showToast(getString(R.string.msg_saved_offline, baseMsg))
+                            Toast.makeText(this@AddHumorActivity, getString(R.string.msg_saved_offline, baseMsg), Toast.LENGTH_LONG).show()
                         } else {
-                            showToast(baseMsg)
+                            Toast.makeText(this@AddHumorActivity, baseMsg, Toast.LENGTH_SHORT).show()
                         }
 
                         setResult(Activity.RESULT_OK)
@@ -162,7 +172,7 @@ class AddHumorActivity : AppCompatActivity() {
                         viewModel.resetSaveStatus()
                     }
                     is SaveState.Error -> {
-                        showToast(state.message)
+                        showSnackbar(state.message, isError = true)
                         binding.btnSave.isEnabled = true
                         viewModel.resetSaveStatus()
                     }
@@ -171,13 +181,33 @@ class AddHumorActivity : AppCompatActivity() {
         }
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    // Função auxiliar para mostrar Snackbar com estilo
+    private fun showSnackbar(message: String, isError: Boolean = false) {
+        val snackbar = Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+        if (isError) {
+            snackbar.setBackgroundTint(getColor(R.color.error_color)) // Usando a cor de erro definida
+            snackbar.setTextColor(getColor(R.color.white))
+        } else {
+            snackbar.setBackgroundTint(getColor(R.color.secondary_color))
+            snackbar.setTextColor(getColor(R.color.white))
+        }
+        snackbar.show()
     }
 
     private fun isInternetAvailable(): Boolean {
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
-        val activeNetwork = cm.activeNetworkInfo
-        return activeNetwork != null && activeNetwork.isConnected
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return when {
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo
+            return networkInfo != null && networkInfo.isConnected
+        }
     }
 }
