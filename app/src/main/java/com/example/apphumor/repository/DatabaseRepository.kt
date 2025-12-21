@@ -121,7 +121,8 @@ class DatabaseRepository {
                 "idade" to user.idade,
                 "email" to user.email,
                 "notificacaoAtiva" to user.notificacaoAtiva,
-                "horarioNotificacao" to user.horarioNotificacao
+                "horarioNotificacao" to user.horarioNotificacao,
+                "fotoBase64" to user.fotoBase64 // <--- SALVA A FOTO AGORA
             )
             db.child(uid).updateChildren(updates)
             Result.Success(Unit)

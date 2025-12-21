@@ -18,6 +18,7 @@ import java.util.*
 
 class HumorNoteAdapter(
     private val showEditButton: Boolean = true,
+    private val showSyncStatus: Boolean = true, // NOVO PARÂMETRO COM PADRÃO TRUE (Home não quebra)
     private val onEditClick: ((HumorNote) -> Unit)? = null
 ) : ListAdapter<HumorNote, HumorNoteAdapter.HumorNoteViewHolder>(HumorNoteDiffCallback()) {
 
@@ -63,15 +64,22 @@ class HumorNoteAdapter(
                 }
 
                 // 6. Status de Sincronização (WhatsApp Style)
-                // A LÓGICA ESTÁ CORRETA AGORA (Sem inversões)
-                if (note.isSynced) {
-                    // TRUE = Já foi para a nuvem -> Check Duplo Azul
-                    ivSyncStatus.setImageResource(R.drawable.ic_status_synced)
-                    ivSyncStatus.contentDescription = "Sincronizado na nuvem"
+                // LÓGICA ALTERADA: Verifica primeiro se deve mostrar o status
+                if (showSyncStatus) {
+                    ivSyncStatus.visibility = View.VISIBLE
+
+                    if (note.isSynced) {
+                        // TRUE = Já foi para a nuvem -> Check Duplo Azul
+                        ivSyncStatus.setImageResource(R.drawable.ic_status_synced)
+                        ivSyncStatus.contentDescription = "Sincronizado na nuvem"
+                    } else {
+                        // FALSE = Ainda está só no cache -> Check Simples Cinza
+                        ivSyncStatus.setImageResource(R.drawable.ic_status_pending)
+                        ivSyncStatus.contentDescription = "Salvo no dispositivo"
+                    }
                 } else {
-                    // FALSE = Ainda está só no cache -> Check Simples Cinza
-                    ivSyncStatus.setImageResource(R.drawable.ic_status_pending)
-                    ivSyncStatus.contentDescription = "Salvo no dispositivo"
+                    // Se estiver no histórico, escondemos o ícone completamente
+                    ivSyncStatus.visibility = View.GONE
                 }
             }
         }

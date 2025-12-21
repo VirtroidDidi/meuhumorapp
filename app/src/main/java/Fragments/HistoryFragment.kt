@@ -12,7 +12,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.bottomsheet.FilterBottomSheet
-// CORREÇÃO 1: Import correto baseado no nome 'fragment_history.xml'
 import com.example.apphumor.databinding.FragmentHistoryBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.FilterState
@@ -22,7 +21,6 @@ import com.example.apphumor.viewmodel.HomeViewModelFactory
 
 class HistoryFragment : Fragment() {
 
-    // CORREÇÃO 2: Tipo da variável atualizado
     private var _binding: FragmentHistoryBinding? = null
     private val binding get() = _binding!!
 
@@ -34,7 +32,6 @@ class HistoryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // CORREÇÃO 3: Inflador correto
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -56,8 +53,12 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = HumorNoteAdapter(showEditButton = false)
-        // Agora o 'binding' vai reconhecer esse ID porque estamos usando o arquivo correto
+        // ALTERAÇÃO AQUI: Passamos showSyncStatus = false para esconder o check na tela de histórico
+        adapter = HumorNoteAdapter(
+            showEditButton = false,
+            showSyncStatus = false
+        )
+
         binding.recyclerViewAllNotes.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HistoryFragment.adapter

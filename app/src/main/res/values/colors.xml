@@ -1,35 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-    <color name="teal_700">#FF018786</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="error_color">#BA1A1A</color>
+    <color name="teal_700">#4A7A68</color> <color name="md_theme_light_primary">#4A7A68</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
 
-    <color name="primary_color">#FFB3ADD9</color>
-    <color name="on_primary_color">#FF1A1A1A</color>
-    <color name="primary_container">#F0EEF9</color> <color name="on_primary_container">#FF1A1A1A</color>
+    <color name="md_theme_light_primaryContainer">#E3ECE8</color>
+    <color name="md_theme_light_onPrimaryContainer">#0F281E</color>
 
-    <color name="secondary_color">#FF377769</color>
-    <color name="on_secondary_color">#FFFFFFFF</color>
-    <color name="secondary_container">#E0F2F1</color> <color name="on_secondary_container">#FF051F19</color>
+    <color name="md_theme_light_secondary">#5C615E</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#E2E7E4</color>
+    <color name="md_theme_light_onSecondaryContainer">#191E1B</color>
 
-    <color name="background_light">#FFF9F4EF</color>
-    <color name="surface_light">#FFF9F4EF</color>
+    <color name="md_theme_light_background">#FBFDFB</color>
+    <color name="md_theme_light_surface">#FBFDFB</color>
+    <color name="md_theme_light_onSurface">#191C1B</color>
 
-    <color name="surface_container_low">#FFF2EBE3</color>     <color name="surface_container">#FFEDE7F6</color>         <color name="surface_container_high">#FFFFFFFF</color>    <color name="surface_container_highest">#E6E1E5</color>
+    <color name="md_theme_light_surfaceContainerHigh">#EAEFEA</color>
+    <color name="md_theme_light_surfaceContainerLow">#F4F8F5</color>
 
-    <color name="on_surface">#FF1C1B1F</color>       <color name="on_surface_variant">#FF49454F</color> <color name="outline">#FF79747E</color>
-    <color name="outline_variant">#FFCAC4D0</color>
+    <color name="md_theme_light_outline">#747976</color>
+    <color name="md_theme_light_outlineVariant">#C4C8C5</color>
 
-    <color name="error_color">#B3261E</color>
-    <color name="on_error_color">#FFFFFF</color>
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
 
-    <color name="accent_yellow">#FFF2C849</color>
-    <color name="accent_coral">#FFF27244</color>
-    <color name="bottom_nav_indicator">#E8DEF8</color>
+    <color name="md_theme_dark_primary">#B1D1C5</color> <color name="md_theme_dark_onPrimary">#1C352A</color>
+    <color name="md_theme_dark_primaryContainer">#334B40</color>
+    <color name="md_theme_dark_onPrimaryContainer">#D8EBE3</color>
 
-    <color name="dark_background">#FF1A1A1A</color>
-    <color name="dark_surface">#FF2A2A2A</color>
-    <color name="on_dark_surface">#FFF9F4EF</color>
+    <color name="md_theme_dark_secondary">#C4C8C5</color>
+    <color name="md_theme_dark_onSecondary">#2E3130</color>
+    <color name="md_theme_dark_secondaryContainer">#444846</color>
+
+    <color name="md_theme_dark_background">#191C1B</color> <color name="md_theme_dark_surface">#191C1B</color>
+    <color name="md_theme_dark_onSurface">#E1E3E1</color>
+
+    <color name="md_theme_dark_surfaceContainerLow">#1C201F</color>
+    <color name="md_theme_dark_surfaceContainerHigh">#282B29</color>
+
+    <color name="md_theme_dark_outline">#8D928F</color>
+    <color name="md_theme_dark_outlineVariant">#444846</color>
+
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_onError">#690005</color>
+
+
+    <color name="primary_color">@color/md_theme_light_primary</color>
+    <color name="on_primary_color">@color/md_theme_light_onPrimary</color>
+    <color name="primary_container">@color/md_theme_light_primaryContainer</color>
+    <color name="on_primary_container">@color/md_theme_light_onPrimaryContainer</color>
+
+    <color name="secondary_color">@color/md_theme_light_secondary</color>
+    <color name="on_secondary_color">@color/md_theme_light_onSecondary</color>
+    <color name="secondary_container">@color/md_theme_light_secondaryContainer</color>
+    <color name="on_secondary_container">@color/md_theme_light_onSecondaryContainer</color>
+
+    <color name="background_light">@color/md_theme_light_background</color>
+    <color name="surface_light">@color/md_theme_light_surface</color>
+    <color name="surface_container_low">@color/md_theme_light_surfaceContainerLow</color>
+    <color name="surface_container_high">@color/md_theme_light_surfaceContainerHigh</color>
+    <color name="surface_container">@color/md_theme_light_surfaceContainerLow</color>
+
+    <color name="on_surface">@color/md_theme_light_onSurface</color>
+    <color name="on_surface_variant">@color/md_theme_light_onSurface</color>
+    <color name="outline">@color/md_theme_light_outline</color>
+    <color name="outline_variant">@color/md_theme_light_outlineVariant</color>
+
+    <color name="dark_background">@color/md_theme_dark_background</color>
+    <color name="dark_surface">@color/md_theme_dark_surface</color>
+    <color name="on_dark_surface">@color/md_theme_dark_onSurface</color>
+
 
     <color name="status_offline_bg">#424242</color>
     <color name="status_offline_text">#FFFFFF</color>
@@ -46,7 +89,7 @@
     <color name="mood_anxious">#FF7043</color>
     <color name="mood_angry">#EF5350</color>
 
-    <color name="insight_rad_bg">#FFF8E1</color>
+    <color name="insight_rad_bg">#FFFDE7</color>
     <color name="insight_happy_bg">#FFF3E0</color>
     <color name="insight_grateful_bg">#E8F5E9</color>
     <color name="insight_calm_bg">#E0F2F1</color>
@@ -56,5 +99,9 @@
     <color name="insight_sad_bg">#E3F2FD</color>
     <color name="insight_anxious_bg">#FBE9E7</color>
     <color name="insight_angry_bg">#FFEBEE</color>
-    <color name="insight_energetic_bg">#FFF8E1</color>
+
+    <color name="accent_yellow">#FFF2C849</color>
+    <color name="accent_coral">#FFF27244</color>
+    <color name="bottom_nav_indicator">#E8DEF8</color>
+
 </resources>

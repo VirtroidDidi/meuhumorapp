@@ -1,36 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.AppHumor" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primary_color</item>
-        <item name="colorOnPrimary">@color/on_primary_color</item>
-        <item name="colorPrimaryContainer">@color/primary_container</item>
-        <item name="colorOnPrimaryContainer">@color/on_primary_color</item>
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
 
-        <item name="colorSecondary">@color/secondary_color</item>
-        <item name="colorOnSecondary">@color/on_secondary_color</item>
-        <item name="colorSecondaryContainer">@color/secondary_container</item>
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
 
-        <item name="android:colorBackground">@color/background_light</item>
-        <item name="colorSurface">@color/surface_light</item>
-        <item name="colorOnSurface">@color/on_surface</item>
-        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
-        <item name="colorOutline">@color/outline</item>
-        <item name="colorOutlineVariant">@color/outline_variant</item>
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_outline</item>
 
-        <item name="colorSurfaceContainerHigh">@color/surface_container_high</item>
-        <item name="colorSurfaceContainerLow">@color/surface_container_low</item>
-        <item name="colorSurfaceContainer">@color/surface_container</item>
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
 
+        <item name="colorSurfaceContainerHigh">@color/md_theme_light_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerLow">@color/md_theme_light_surfaceContainerLow</item>
+
+        <item name="android:statusBarColor">@color/md_theme_light_background</item>
+        <item name="android:windowLightStatusBar">true</item> <item name="materialButtonStyle">@style/AppButton</item>
+        <item name="textInputStyle">@style/AppTextInputLayout</item>
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.App.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.App.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.App.Large</item>
-
-        <item name="android:statusBarColor">@color/background_light</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:navigationBarColor">@color/surface_container_high</item>
-
-        <item name="materialButtonStyle">@style/AppButton</item>
-        <item name="textInputStyle">@style/AppTextInputLayout</item>
     </style>
 
     <style name="ShapeAppearance.App.Small" parent="ShapeAppearance.Material3.SmallComponent">
@@ -45,13 +41,24 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">24dp</item>
     </style>
+    <style name="ShapeAppearance.App.Circle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <style name="AppButton" parent="Widget.Material3.Button">
         <item name="android:paddingVertical">12dp</item>
         <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">16dp</item>
     </style>
+
     <style name="AppTextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="boxStrokeColor">@color/md_theme_light_primary</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.Medium</item>
-        <item name="boxBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="boxBackgroundColor">@color/md_theme_light_surfaceContainerLow</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
     </style>
 </resources>
