@@ -1,12 +1,9 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/CadastroViewModel.kt
-
 package com.example.apphumor.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider // NOVO: Para a Factory
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
@@ -16,16 +13,11 @@ import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * [CadastroViewModel]
- * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
- */
 class CadastroViewModel(
-    private val auth: FirebaseAuth, // Recebido no construtor
-    private val dbRepository: DatabaseRepository // Recebido no construtor
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
-    // REMOVIDAS: Inicializações internas de auth e dbRepository
     private val TAG = "CadastroViewModel"
 
     private val _cadastroSuccess = MutableLiveData<Boolean>()
@@ -54,7 +46,6 @@ class CadastroViewModel(
                 if (firebaseUser?.uid != null) {
                     val user = User(firebaseUser.uid, nome, email, idade)
 
-                    // Chama a nova função suspend do repositório
                     val saveResult = dbRepository.saveUser(user)
 
                     _isLoading.value = false
@@ -62,7 +53,6 @@ class CadastroViewModel(
                     if (saveResult is DatabaseRepository.Result.Success) {
                         _cadastroSuccess.value = true
                     } else {
-                        // Loga o usuário fora se a criação do perfil falhar
                         auth.signOut()
                         _errorMessage.value = "Conta criada, mas falha ao salvar perfil. Tente logar novamente."
                     }
@@ -91,20 +81,4 @@ class CadastroViewModel(
         _errorMessage.value = null
     }
 }
-
-/**
- * Factory personalizada para instanciar CadastroViewModel com as dependências necessárias.
- */
-class CadastroViewModelFactory(
-    private val auth: FirebaseAuth,
-    private val dbRepository: DatabaseRepository
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CadastroViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CadastroViewModel(auth, dbRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
+// REMOVIDO: class CadastroViewModelFactory

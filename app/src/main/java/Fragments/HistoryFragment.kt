@@ -13,11 +13,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.bottomsheet.FilterBottomSheet
 import com.example.apphumor.databinding.FragmentHistoryBinding
-import com.example.apphumor.di.DependencyProvider
-import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
 import com.example.apphumor.viewmodel.HomeViewModel
-import com.example.apphumor.viewmodel.HomeViewModelFactory
+import com.example.apphumor.viewmodel.HumorViewModelFactory
 
 class HistoryFragment : Fragment() {
 
@@ -28,9 +26,7 @@ class HistoryFragment : Fragment() {
     private lateinit var adapter: HumorNoteAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHistoryBinding.inflate(inflater, container, false)
         return binding.root
@@ -39,61 +35,69 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(
-            this,
-            HomeViewModelFactory(
-                DependencyProvider.auth,
-                DependencyProvider.databaseRepository
-            )
-        ).get(HomeViewModel::class.java)
+        val appContainer = (requireActivity().application as AppHumorApplication).container
+        val factory = HumorViewModelFactory(appContainer.databaseRepository, appContainer.auth)
+        viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
 
         setupRecyclerView()
-        setupSearchAndFilters()
+        setupSearch()
+        setupListeners()
         setupObservers()
     }
 
     private fun setupRecyclerView() {
-        // ALTERAÇÃO AQUI: Passamos showSyncStatus = false para esconder o check na tela de histórico
+        // MODO APENAS LEITURA (Histórico)
+        // showEditButton = false (Sem lápis)
+        // showSyncStatus = false (Sem ícone de nuvem)
+        // onEditClick = null (Sem ação de clique)
         adapter = HumorNoteAdapter(
             showEditButton = false,
-            showSyncStatus = false
+            showSyncStatus = false,
+            onEditClick = null
         )
 
-        binding.recyclerViewAllNotes.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = this@HistoryFragment.adapter
-        }
+        // CORREÇÃO: ID do XML é rv_history, então aqui usamos rvHistory
+        binding.rvHistory.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvHistory.adapter = adapter
     }
 
-    private fun setupSearchAndFilters() {
+    private fun setupSearch() {
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-
-            override fun afterTextChanged(s: Editable?) {
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 viewModel.updateSearchQuery(s.toString())
             }
+            override fun afterTextChanged(s: Editable?) {}
         })
+    }
 
+    private fun setupListeners() {
         binding.btnFilter.setOnClickListener {
-            val currentState = viewModel.filterState.value ?: FilterState()
-            val bottomSheet = FilterBottomSheet(currentState) { newState ->
-                viewModel.updateFilterState(newState)
-            }
-            bottomSheet.show(parentFragmentManager, "FilterBottomSheet")
+            val currentFilters = viewModel.filterState.value ?: com.example.apphumor.models.FilterState()
+
+            val filterSheet = FilterBottomSheet(
+                currentState = currentFilters,
+                onApply = { newState ->
+                    viewModel.updateFilterState(newState)
+                }
+            )
+            filterSheet.show(childFragmentManager, "FilterBottomSheet")
         }
     }
 
     private fun setupObservers() {
         viewModel.filteredHistoryNotes.observe(viewLifecycleOwner) { notes ->
-            adapter.submitList(notes)
+            val hasNotes = notes.isNotEmpty()
 
-            binding.recyclerViewAllNotes.isVisible = notes.isNotEmpty()
-            binding.emptyState.isVisible = notes.isEmpty()
+            // CORREÇÃO: Usando rvHistory
+            binding.rvHistory.isVisible = hasNotes
+            binding.emptyState.isVisible = !hasNotes
 
-            if (notes.isEmpty()) {
+            if (hasNotes) {
+                adapter.submitList(notes)
+            } else {
                 val isFiltering = viewModel.filterState.value?.let {
-                    it.query.isNotEmpty() || it.timeRange != FilterTimeRange.ALL_TIME
+                    it.query.isNotEmpty() || it.selectedHumors.isNotEmpty() || it.timeRange != FilterTimeRange.ALL_TIME
                 } ?: false
 
                 binding.tvEmptyMessage.text = if (isFiltering) {
@@ -105,19 +109,12 @@ class HistoryFragment : Fragment() {
         }
 
         viewModel.filterState.observe(viewLifecycleOwner) { state ->
-            val activeFilters = mutableListOf<String>()
+            val hasFilters = state.selectedHumors.isNotEmpty() || state.timeRange != FilterTimeRange.ALL_TIME
+            binding.tvFilterStatus.isVisible = hasFilters
 
-            if (state.timeRange == FilterTimeRange.LAST_7_DAYS) activeFilters.add(getString(R.string.period_7_days))
-            if (state.timeRange == FilterTimeRange.LAST_30_DAYS) activeFilters.add(getString(R.string.period_30_days))
-            if (state.selectedHumors.isNotEmpty()) activeFilters.add("${state.selectedHumors.size} humores")
-            if (state.onlyWithNotes) activeFilters.add(getString(R.string.filter_only_notes))
-
-            if (activeFilters.isNotEmpty()) {
-                binding.tvFilterStatus.isVisible = true
-                binding.tvFilterStatus.text = getString(R.string.filter_active_format, activeFilters.joinToString(", "))
+            if (hasFilters) {
                 binding.btnFilter.setIconTintResource(R.color.teal_700)
             } else {
-                binding.tvFilterStatus.isVisible = false
                 binding.btnFilter.setIconTintResource(R.color.black)
             }
         }

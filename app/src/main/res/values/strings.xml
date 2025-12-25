@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AppHumor</string>
 
@@ -23,6 +24,7 @@
     <string name="hint_name">Nome Completo</string>
     <string name="hint_password_min">Senha (mín. 6 caracteres)</string>
     <string name="hint_confirm_password">Confirmar Senha</string>
+    <string name="hint_age">Idade</string>
     <string name="label_age">Sua Idade:</string>
     <string name="action_register">Cadastrar</string>
     <string name="action_go_to_login">Já tenho conta. Fazer login</string>
@@ -42,7 +44,8 @@
     <string name="action_add_record">+ Adicionar Registro</string>
     <string name="progress_label_days">Dias</string>
     <string name="sequence_congrats">Parabéns! Sequência semanal completa!</string>
-    <string name="sequence_days">Sequência de %1$d dias consecutivos!</string> <string name="sequence_default">Sua sequência diária de notas.</string>
+    <string name="sequence_days">Sequência de %1$d dias consecutivos!</string>
+    <string name="sequence_default">Sua sequência diária de notas.</string>
     <string name="sequence_reset">Sequência Reiniciada. Comece hoje!</string>
 
     <string name="search_hint">Buscar nas anotações...</string>
@@ -64,7 +67,17 @@
     <string name="filter_section_humor">Humor (Selecione um ou mais)</string>
     <string name="filter_only_notes">Apenas com anotações escritas</string>
 
-    <string name="humor_rad">Incrível</string> <string name="humor_happy">Feliz</string>   <string name="humor_grateful">Grato</string> <string name="humor_calm">Calmo</string>     <string name="humor_neutral">Neutro</string> <string name="humor_pensive">Pensativo</string> <string name="humor_tired">Cansado</string>   <string name="humor_sad">Triste</string>      <string name="humor_anxious">Ansioso</string> <string name="humor_angry">Irritado</string>  <string name="humor_energetic">Energético</string>
+    <string name="humor_rad">Incrível</string>
+    <string name="humor_happy">Feliz</string>
+    <string name="humor_grateful">Grato</string>
+    <string name="humor_calm">Calmo</string>
+    <string name="humor_neutral">Neutro</string>
+    <string name="humor_pensive">Pensativo</string>
+    <string name="humor_tired">Cansado</string>
+    <string name="humor_sad">Triste</string>
+    <string name="humor_anxious">Ansioso</string>
+    <string name="humor_angry">Irritado</string>
+    <string name="humor_energetic">Energético</string>
     <string name="humor_excellent">Excelente</string>
     <string name="humor_good">Bem</string>
 
@@ -101,6 +114,7 @@
     <string name="error_age_invalid">Idade inválida.</string>
     <string name="success_profile_saved">Perfil salvo com sucesso!</string>
     <string name="error_save_profile">Falha ao salvar alterações.</string>
+    <string name="profile_notifications">Notificações Diárias</string>
 
     <string name="period_current_month">Mês Atual</string>
     <string name="insight_no_data">Sem dados para o período selecionado.</string>

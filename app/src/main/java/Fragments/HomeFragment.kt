@@ -1,9 +1,7 @@
 package com.example.apphumor
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,35 +10,19 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.databinding.FragmentHomeBinding
-import com.example.apphumor.di.DependencyProvider
-import com.example.apphumor.models.HumorNote
 import com.example.apphumor.viewmodel.HomeViewModel
-import com.example.apphumor.viewmodel.HomeViewModelFactory
-import java.util.*
+import com.example.apphumor.viewmodel.HumorViewModelFactory
 
-/**
- * [HomeFragment]
- * Exibe as notas registradas hoje e o progresso da sequência.
- * Atualizado para usar FragmentHomeBinding e strings.xml.
- */
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var viewModel: HomeViewModel
     private lateinit var adapter: HumorNoteAdapter
-    private val TAG = "HomeFragment"
-
-    companion object {
-        const val ADD_NOTE_REQUEST_CODE = 1001
-    }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
-        // Atualizado para o novo nome do layout: fragment_home
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -48,58 +30,50 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(
-            this,
-            HomeViewModelFactory(
-                DependencyProvider.auth,
-                DependencyProvider.databaseRepository
-            )
-        ).get(HomeViewModel::class.java)
+        val appContainer = (requireActivity().application as AppHumorApplication).container
+        val factory = HumorViewModelFactory(appContainer.databaseRepository, appContainer.auth)
+        viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
 
         setupRecyclerView()
-        setupButton()
+        setupListeners()
         setupObservers()
     }
 
     private fun setupRecyclerView() {
-        adapter = HumorNoteAdapter(showEditButton = true, onEditClick = { note ->
-            val intent = Intent(requireActivity(), AddHumorActivity::class.java).apply {
-                putExtra("EDIT_NOTE", note)
+        // ESTRATÉGIA CIRÚRGICA APLICADA:
+        // showEditButton = true -> Exibe o lápis para editar
+        // showSyncStatus = true -> Exibe o status de sincronização (double check)
+        adapter = HumorNoteAdapter(
+            showEditButton = true,
+            showSyncStatus = true,
+            onEditClick = { note ->
+                // Abre a tela de edição enviando a nota clicada
+                val intent = Intent(requireContext(), AddHumorActivity::class.java).apply {
+                    putExtra("humor_note", note)
+                }
+                startActivity(intent)
             }
-            startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
-        })
+        )
 
-        binding.recyclerViewNotes.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            setHasFixedSize(true)
-            adapter = this@HomeFragment.adapter
-        }
+        binding.recyclerViewNotes.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerViewNotes.adapter = adapter
     }
 
-    private fun setupButton() {
-        binding.emptyState.findViewById<View>(R.id.btn_add_record).setOnClickListener {
-            val intent = Intent(requireActivity(), AddHumorActivity::class.java)
-            startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            Log.d(TAG, "Nota salva com sucesso.")
+    private fun setupListeners() {
+        binding.btnAddRecord.setOnClickListener {
+            startActivity(Intent(requireContext(), AddHumorActivity::class.java))
         }
     }
 
     private fun setupObservers() {
-        // Observa as notas de hoje filtradas pelo ViewModel
         viewModel.todayNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
                 binding.recyclerViewNotes.visibility = View.VISIBLE
                 binding.emptyState.visibility = View.GONE
                 adapter.submitList(notes)
             } else {
-                showEmptyState()
-                adapter.submitList(emptyList())
+                binding.recyclerViewNotes.visibility = View.GONE
+                binding.emptyState.visibility = View.VISIBLE
             }
         }
 
@@ -113,8 +87,6 @@ class HomeFragment : Fragment() {
         binding.progressCard.progressBar.progress = sequence
 
         val maxDays = binding.progressCard.progressBar.max
-
-        // Uso de strings.xml com suporte a argumentos dinâmicos (%1$d)
         var descriptionText = when {
             sequence >= maxDays -> getString(R.string.sequence_congrats)
             sequence > 0 -> getString(R.string.sequence_days, sequence)
@@ -127,13 +99,8 @@ class HomeFragment : Fragment() {
         binding.progressCard.tvSequenceDescription.text = descriptionText
     }
 
-    private fun showEmptyState() {
-        binding.recyclerViewNotes.visibility = View.GONE
-        binding.emptyState.visibility = View.VISIBLE
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null // Importante para evitar vazamento de memória
+        _binding = null
     }
 }

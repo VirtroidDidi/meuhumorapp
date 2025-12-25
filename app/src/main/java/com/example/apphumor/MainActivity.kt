@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     private val handler = Handler(Looper.getMainLooper())
     private var isConnected = false
 
-    // Lançador de permissão para Notificações (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { _ -> }
@@ -40,7 +39,10 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
         setContentView(binding.root)
 
         binding.root.layoutTransition = LayoutTransition()
-        auth = FirebaseAuth.getInstance()
+
+        // MUDANÇA: Pegando Auth do Container
+        val appContainer = (application as AppHumorApplication).container
+        auth = appContainer.auth
 
         setupNavigation()
         setupConnectionMonitor()
@@ -48,16 +50,9 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     }
 
     private fun setupNavigation() {
-        // Encontra o NavHostFragment que definimos no XML
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.fragmentContainerMain) as NavHostFragment
-
-        // Pega o controlador de navegação
         val navController = navHostFragment.navController
-
-        // Conecta a BottomNavigationView com o NavController
-        // A mágica acontece aqui: como os IDs do menu batem com o gráfico,
-        // ele navega automaticamente!
         binding.bottomNav.setupWithNavController(navController)
     }
 
@@ -72,6 +67,8 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     }
 
     private fun setupConnectionMonitor() {
+        // Mantemos getInstance aqui pois é um listener específico de sistema (.info)
+        // e não interfere na lógica de dados do usuário.
         val connectedRef = FirebaseDatabase.getInstance().getReference(".info/connected")
         connectedRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {

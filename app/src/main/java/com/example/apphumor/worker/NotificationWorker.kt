@@ -11,9 +11,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.example.apphumor.AppHumorApplication
 import com.example.apphumor.MainActivity
 import com.example.apphumor.R
-import com.example.apphumor.di.DependencyProvider
 import java.util.*
 
 class NotificationWorker(
@@ -22,20 +22,27 @@ class NotificationWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val auth = DependencyProvider.auth
-        val repository = DependencyProvider.databaseRepository
+        // CORREÇÃO: Acessa as dependências via AppContainer (Application)
+        // em vez do antigo DependencyProvider estático.
+        val application = applicationContext as AppHumorApplication
+        val container = application.container
+
+        val auth = container.auth
+        val repository = container.databaseRepository
+
         val userId = auth.currentUser?.uid ?: return Result.success()
 
-        // Se não tem usuário logado, não faz nada
+        // Lógica original mantida: Busca notas e verifica se já registrou hoje
+        try {
+            val notes = repository.getHumorNotesOnce(userId)
+            val lastNoteTimestamp = notes.maxByOrNull { it.timestamp }?.timestamp ?: 0L
 
-        // Busca notas (One-Shot)
-        val notes = repository.getHumorNotesOnce(userId)
-
-        // Verifica se existe alguma nota de HOJE
-        val lastNoteTimestamp = notes.maxByOrNull { it.timestamp }?.timestamp ?: 0L
-
-        if (!isToday(lastNoteTimestamp)) {
-            sendNotification()
+            if (!isToday(lastNoteTimestamp)) {
+                sendNotification()
+            }
+        } catch (e: Exception) {
+            // Em caso de erro na busca, retornamos falha ou retry
+            return Result.failure()
         }
 
         return Result.success()
@@ -44,22 +51,21 @@ class NotificationWorker(
     private fun isToday(timestamp: Long): Boolean {
         if (timestamp == 0L) return false
         val calendarNote = Calendar.getInstance().apply { timeInMillis = timestamp }
-        val calendarNow = Calendar.getInstance()
+        val calendarToday = Calendar.getInstance()
 
-        return calendarNote.get(Calendar.DAY_OF_YEAR) == calendarNow.get(Calendar.DAY_OF_YEAR) &&
-                calendarNote.get(Calendar.YEAR) == calendarNow.get(Calendar.YEAR)
+        return calendarNote.get(Calendar.YEAR) == calendarToday.get(Calendar.YEAR) &&
+                calendarNote.get(Calendar.DAY_OF_YEAR) == calendarToday.get(Calendar.DAY_OF_YEAR)
     }
 
-    // A anotação abaixo remove o erro vermelho do notify, pois já fazemos a checagem manual
     @SuppressLint("MissingPermission")
     private fun sendNotification() {
-        // Verifica permissão (Android 13+)
-        if (ContextCompat.checkSelfPermission(
+        // Verifica permissão para Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
                 applicationContext,
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // Sem permissão, aborta silenciosamente
             return
         }
 
@@ -70,21 +76,14 @@ class NotificationWorker(
             applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        // ===================================
-        // CÓDIGO ATUALIZADO
-        // ===================================
         val builder = NotificationCompat.Builder(applicationContext, "HUMOR_CHANNEL_ID")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            // TÍTULO DE ALERTA ATUALIZADO
             .setContentTitle("🔥 Não quebre sua sequência!")
-            // TEXTO PERSUASIVO ATUALIZADO
             .setContentText("Você ainda não registrou seu humor hoje. Entre agora para manter seu histórico!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-        // ===================================
 
-        // O erro deve sumir agora com o @SuppressLint acima
         with(NotificationManagerCompat.from(applicationContext)) {
             notify(1001, builder.build())
         }

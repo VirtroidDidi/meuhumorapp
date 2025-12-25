@@ -5,25 +5,35 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import androidx.work.* // Import do WorkManager
+import androidx.work.*
+import com.example.apphumor.di.AppContainer
 import com.example.apphumor.worker.NotificationWorker
 import com.google.firebase.database.FirebaseDatabase
 import java.util.concurrent.TimeUnit
 
 class AppHumorApplication : Application() {
 
+    // Instância do Container acessível por todas as Activities/Fragments
+    lateinit var container: AppContainer
+
     override fun onCreate() {
         super.onCreate()
+
+        // 1. Inicializa o Container (Injeção de Dependência)
+        container = AppContainer()
+
+        // 2. Configurações do Firebase (Persistência Offline)
         FirebaseDatabase.getInstance().setPersistenceEnabled(true)
 
+        // 3. Configurações de Notificação e Workers (Mantido do original)
         createNotificationChannel()
         setupDailyWorker()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Lembrete Diário"
-            val descriptionText = "Notificações para registrar seu humor"
+            val name = getString(R.string.notification_channel_name) // Usando strings.xml se disponível
+            val descriptionText = getString(R.string.notification_channel_desc)
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel("HUMOR_CHANNEL_ID", name, importance).apply {
                 description = descriptionText
@@ -35,17 +45,14 @@ class AppHumorApplication : Application() {
     }
 
     private fun setupDailyWorker() {
-        // Define restrições (ex: apenas se tiver bateria razoável)
         val constraints = Constraints.Builder()
             .setRequiresBatteryNotLow(true)
             .build()
 
-        // Configura para repetir a cada 24 horas
         val dailyWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
 
-        // Enfileira o trabalho (KEEP garante que não criamos duplicatas ao abrir o app)
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "DailyHumorReminder",
             ExistingPeriodicWorkPolicy.KEEP,

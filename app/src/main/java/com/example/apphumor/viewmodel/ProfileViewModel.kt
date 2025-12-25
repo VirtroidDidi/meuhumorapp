@@ -5,13 +5,11 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.example.apphumor.utils.ImageUtils
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -20,7 +18,6 @@ class ProfileViewModel(
     private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
-    // --- ESTADOS ---
     private val _userProfile = MutableLiveData<User?>()
     val userProfile: LiveData<User?> = _userProfile
 
@@ -33,101 +30,77 @@ class ProfileViewModel(
     private val _logoutEvent = MutableLiveData<Boolean>()
     val logoutEvent: LiveData<Boolean> = _logoutEvent
 
-    // --- RASCUNHOS (DRAFT) ---
+    // Rascunhos para edição
     private val _draftNotificationEnabled = MutableLiveData<Boolean>()
-    val draftNotificationEnabled: LiveData<Boolean> = _draftNotificationEnabled
-
     private val _draftTime = MutableLiveData<Pair<Int, Int>>()
     val draftTime: LiveData<Pair<Int, Int>> = _draftTime
-
-    // Rascunho da Foto (apenas para exibição imediata)
-    private val _draftPhotoBase64 = MutableLiveData<String?>()
-    val draftPhotoBase64: LiveData<String?> = _draftPhotoBase64
-
-    private val _scheduleNotificationEvent = MutableLiveData<Pair<Boolean, String>?>()
-    val scheduleNotificationEvent: LiveData<Pair<Boolean, String>?> = _scheduleNotificationEvent
 
     init {
         loadUserProfile()
     }
 
-    fun loadUserProfile() {
+    private fun loadUserProfile() {
         val userId = auth.currentUser?.uid ?: return
         _loading.value = true
-
         viewModelScope.launch {
             val result = dbRepository.getUser(userId)
             _loading.value = false
             if (result is DatabaseRepository.Result.Success) {
-                val user = result.data
-                _userProfile.value = user
-                user?.let {
-                    _draftNotificationEnabled.value = it.notificacaoAtiva
-                    _draftPhotoBase64.value = it.fotoBase64 // Carrega a foto atual
-                    val parts = it.horarioNotificacao.split(":")
-                    if (parts.size == 2) {
-                        _draftTime.value = Pair(parts[0].toIntOrNull() ?: 20, parts[1].toIntOrNull() ?: 0)
+                _userProfile.value = result.data
+                // Inicializa os rascunhos com os valores atuais
+                result.data?.let { user ->
+                    _draftNotificationEnabled.value = user.notificacaoAtiva
+                    val timeParts = user.horarioNotificacao.split(":")
+                    if (timeParts.size == 2) {
+                        _draftTime.value = Pair(timeParts[0].toInt(), timeParts[1].toInt())
                     }
                 }
             }
         }
     }
 
-    // --- NOVA FUNÇÃO: SALVA A FOTO IMEDIATAMENTE ---
+    // --- LÓGICA DE IMAGEM ---
+    // Atualiza a foto assim que o usuário seleciona na galeria (sem esperar o botão Salvar)
     fun updatePhotoImmediately(context: Context, uri: Uri) {
-        _loading.value = true // Mostra loading
+        val currentUser = _userProfile.value ?: return
+        _loading.value = true
 
-        viewModelScope.launch(Dispatchers.IO) {
-            // 1. Processa a imagem em Background
-            val base64 = ImageUtils.uriToBase64(context, uri)
+        viewModelScope.launch {
+            // 1. Converte URI para Base64 usando ImageUtils
+            val base64Image = ImageUtils.uriToBase64(context, uri)
 
-            if (base64 != null) {
-                // 2. Atualiza a visualização local
-                _draftPhotoBase64.postValue(base64)
+            if (base64Image != null) {
+                // 2. Cria usuário com a nova foto
+                val updatedUser = currentUser.copy(fotoBase64 = base64Image)
 
-                // 3. Prepara o objeto atualizado
-                val currentUser = _userProfile.value
-                if (currentUser != null) {
-                    val updatedUser = currentUser.copy(fotoBase64 = base64)
+                // 3. Salva no Firebase
+                val result = dbRepository.updateUser(updatedUser)
 
-                    // 4. Salva no Firebase AGORA
-                    val result = dbRepository.updateUser(updatedUser)
-
-                    if (result is DatabaseRepository.Result.Success) {
-                        // Sucesso: Atualiza o perfil oficial na memória
-                        _userProfile.postValue(updatedUser)
-                        _updateStatus.postValue("Foto de perfil atualizada!")
-                    } else {
-                        _updateStatus.postValue("Erro ao salvar foto.")
-                    }
+                if (result is DatabaseRepository.Result.Success) {
+                    // 4. Atualiza a UI imediatamente
+                    _userProfile.value = updatedUser
+                    _updateStatus.value = "Foto atualizada!"
+                } else {
+                    _updateStatus.value = "Erro ao salvar foto."
                 }
             } else {
-                _updateStatus.postValue("Erro ao processar imagem.")
+                _updateStatus.value = "Erro ao processar imagem."
             }
-            _loading.postValue(false) // Esconde loading
+            _loading.value = false
         }
     }
 
-    // Apenas atualiza o draft (se precisar exibir sem salvar, mas agora usamos o de cima)
-    fun processSelectedImage(context: Context, uri: Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val base64 = ImageUtils.uriToBase64(context, uri)
-            _draftPhotoBase64.postValue(base64)
-        }
+    fun setDraftNotificationEnabled(enabled: Boolean) {
+        _draftNotificationEnabled.value = enabled
     }
 
-    // Setters de Draft
-    fun setDraftNotificationEnabled(enabled: Boolean) { _draftNotificationEnabled.value = enabled }
-    fun setDraftTime(hour: Int, minute: Int) { _draftTime.value = Pair(hour, minute) }
-    fun clearScheduleEvent() { _scheduleNotificationEvent.value = null }
-    fun clearStatus() { _updateStatus.value = null }
-    fun clearLogoutEvent() { _logoutEvent.value = false }
+    fun setDraftTime(hour: Int, minute: Int) {
+        _draftTime.value = Pair(hour, minute)
+    }
 
-    // Salva APENAS Nome, Idade e Configurações (A foto já foi salva antes)
     fun saveAllChanges(newName: String, newAge: Int) {
         val currentUser = _userProfile.value ?: return
-
-        // Mantém a foto que já está salva no usuário (ou a nova se tiver atualizado o objeto)
+        // Mantém a foto que já está lá (seja antiga ou atualizada via updatePhotoImmediately)
         val finalPhoto = currentUser.fotoBase64
 
         val isNotifEnabled = _draftNotificationEnabled.value ?: currentUser.notificacaoAtiva
@@ -149,31 +122,22 @@ class ProfileViewModel(
             if (result is DatabaseRepository.Result.Success) {
                 _userProfile.value = updatedUser
                 _updateStatus.value = "Dados salvos com sucesso!"
-                _scheduleNotificationEvent.value = Pair(isNotifEnabled, timeString)
-                setEditingMode(false)
             } else {
                 _updateStatus.value = "Falha ao salvar dados."
             }
         }
     }
 
-    private fun setEditingMode(editing: Boolean) { /* Helper se necessário */ }
+    fun clearStatus() {
+        _updateStatus.value = null
+    }
+
+    fun clearLogoutEvent() {
+        _logoutEvent.value = false
+    }
 
     fun logout() {
         auth.signOut()
         _logoutEvent.value = true
-    }
-}
-
-class ProfileViewModelFactory(
-    private val auth: FirebaseAuth,
-    private val dbRepository: DatabaseRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ProfileViewModel(auth, dbRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
