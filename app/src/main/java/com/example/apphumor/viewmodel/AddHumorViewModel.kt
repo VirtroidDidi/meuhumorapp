@@ -29,8 +29,8 @@ sealed class SaveState {
  * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
  */
 class AddHumorViewModel(
-    private val repository: DatabaseRepository, // Recebido no construtor
-    private val auth: FirebaseAuth // Recebido no construtor
+    private val repository: DatabaseRepository,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val TAG = "AddHumorViewModel"

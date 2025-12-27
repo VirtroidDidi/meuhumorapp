@@ -14,8 +14,8 @@ import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.databinding.FragmentHomeBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.HomeViewModel
-import com.example.apphumor.viewmodel.HomeViewModelFactory
 import java.util.*
 
 /**
@@ -23,12 +23,14 @@ import java.util.*
  * Exibe as notas registradas hoje e o progresso da sequência.
  * Atualizado para usar FragmentHomeBinding e strings.xml.
  */
+
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
     private lateinit var viewModel: HomeViewModel
     private lateinit var adapter: HumorNoteAdapter
+
     private val TAG = "HomeFragment"
 
     companion object {
@@ -40,7 +42,6 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // Atualizado para o novo nome do layout: fragment_home
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -48,13 +49,13 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(
-            this,
-            HomeViewModelFactory(
-                DependencyProvider.auth,
-                DependencyProvider.databaseRepository
-            )
-        ).get(HomeViewModel::class.java)
+        // --- MUDANÇA AQUI: Usando a Factory Global ---
+        val factory = AppViewModelFactory(
+            DependencyProvider.auth,
+            DependencyProvider.databaseRepository
+        )
+        viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
+        // ---------------------------------------------
 
         setupRecyclerView()
         setupButton()
@@ -134,6 +135,6 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null // Importante para evitar vazamento de memória
+        _binding = null
     }
 }

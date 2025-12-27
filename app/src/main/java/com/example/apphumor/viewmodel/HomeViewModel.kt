@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.switchMap
 import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
@@ -186,18 +185,5 @@ class HomeViewModel(
         return notes.filter { note ->
             note.timestamp in todayStart until todayEnd
         }
-    }
-}
-
-class HomeViewModelFactory(
-    private val auth: FirebaseAuth,
-    private val dbRepository: DatabaseRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(auth, dbRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

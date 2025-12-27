@@ -17,8 +17,7 @@ data class HumorNote(
     val descricao: String? = null,
     val timestamp: Long = 0L,
     @get:PropertyName("isSynced")
-    @set:PropertyName("isSynced")
-    var isSynced: Boolean = false,
+    val isSynced: Boolean = false,
     val data: Map<String, @RawValue Any>? = null
 ) : Parcelable
 
@@ -29,5 +28,5 @@ data class User(
     val idade: Int? = null,
     val notificacaoAtiva: Boolean = true,
     val horarioNotificacao: String = "20:00",
-    val fotoBase64: String? = null // <--- NOVO CAMPO DE FOTO
+    val fotoBase64: String? = null
 )

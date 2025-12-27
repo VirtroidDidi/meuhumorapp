@@ -16,8 +16,9 @@ import com.example.apphumor.databinding.FragmentHistoryBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
+import com.example.apphumor.viewmodel.AppViewModelFactory // <--- IMPORTANTE: Nova Factory
 import com.example.apphumor.viewmodel.HomeViewModel
-import com.example.apphumor.viewmodel.HomeViewModelFactory
+// Removido: import com.example.apphumor.viewmodel.HomeViewModelFactory (Não existe mais)
 
 class HistoryFragment : Fragment() {
 
@@ -39,13 +40,14 @@ class HistoryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewModel = ViewModelProvider(
-            this,
-            HomeViewModelFactory(
-                DependencyProvider.auth,
-                DependencyProvider.databaseRepository
-            )
-        ).get(HomeViewModel::class.java)
+        // --- CORREÇÃO: Usando a Factory Global ---
+        val factory = AppViewModelFactory(
+            DependencyProvider.auth,
+            DependencyProvider.databaseRepository
+        )
+
+        viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
+        // -----------------------------------------
 
         setupRecyclerView()
         setupSearchAndFilters()
@@ -53,7 +55,6 @@ class HistoryFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        // ALTERAÇÃO AQUI: Passamos showSyncStatus = false para esconder o check na tela de histórico
         adapter = HumorNoteAdapter(
             showEditButton = false,
             showSyncStatus = false

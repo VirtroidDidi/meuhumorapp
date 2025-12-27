@@ -11,8 +11,10 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.tasks.await
 
-class DatabaseRepository {
-    private val db = FirebaseDatabase.getInstance().getReference("users")
+// Mudança: Construtor recebe o banco. "users" é definido a partir dele.
+class DatabaseRepository(private val database: FirebaseDatabase) {
+
+    private val db = database.getReference("users")
     private val TAG = "DatabaseRepository"
 
     sealed class Result<out T> {
@@ -30,16 +32,12 @@ class DatabaseRepository {
                     val rawNote = child.getValue(HumorNote::class.java)
 
                     rawNote?.let { note ->
-                        // Lógica de Compatibilidade:
-                        // Se o banco tem "isSynced", usamos o valor real.
-                        // Se NÃO tem (nota antiga), assumimos TRUE (Sincronizado).
                         val realSyncStatus = if (child.hasChild("isSynced")) {
                             note.isSynced
                         } else {
                             true
                         }
 
-                        // Ajuste de timestamp legado (se existir)
                         var correctTimestamp = note.timestamp
                         if (correctTimestamp == 0L) {
                             val legacyTime = note.data?.get("time") as? Long
@@ -70,11 +68,10 @@ class DatabaseRepository {
             val noteRef = db.child(userId).child("notes").push()
             val newId = noteRef.key ?: throw Exception("Falha ao gerar chave.")
 
-            // 1. Salva como FALSE (Pendente) -> Ícone Cinza imediato
+            // Agora usamos .copy() obrigatoriamente pois é val
             val noteToSave = note.copy(id = newId, userId = userId, isSynced = false)
 
             noteRef.setValue(noteToSave).addOnSuccessListener {
-                // 2. Callback do Servidor: Atualiza para TRUE -> Ícone Azul
                 noteRef.child("isSynced").setValue(true)
             }
 
@@ -89,12 +86,10 @@ class DatabaseRepository {
         return try {
             val noteId = note.id ?: throw Exception("ID nulo.")
 
-            // Ao editar, volta a ser pendente (check cinza) até confirmar
             val notePending = note.copy(isSynced = false)
             val ref = db.child(userId).child("notes").child(noteId)
 
             ref.setValue(notePending).addOnSuccessListener {
-                // Confirmou edição -> check azul
                 ref.child("isSynced").setValue(true)
             }
 
@@ -104,7 +99,7 @@ class DatabaseRepository {
         }
     }
 
-    // --- Outros Métodos (User, OneShot) mantidos ---
+    // --- Outros Métodos ---
     suspend fun saveUser(user: User): Result<Unit> {
         val uid = user.uid ?: return Result.Error(Exception("UID nulo"))
         return try {
@@ -122,7 +117,7 @@ class DatabaseRepository {
                 "email" to user.email,
                 "notificacaoAtiva" to user.notificacaoAtiva,
                 "horarioNotificacao" to user.horarioNotificacao,
-                "fotoBase64" to user.fotoBase64 // <--- SALVA A FOTO AGORA
+                "fotoBase64" to user.fotoBase64
             )
             db.child(uid).updateChildren(updates)
             Result.Success(Unit)

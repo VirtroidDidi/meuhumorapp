@@ -16,6 +16,7 @@ import com.example.apphumor.models.HumorNote
 import com.example.apphumor.utils.hideKeyboard
 import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.example.apphumor.viewmodel.AddHumorViewModelFactory
+import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.SaveState
 import com.google.android.material.snackbar.Snackbar // Import do Snackbar
 import kotlinx.coroutines.launch
@@ -31,13 +32,13 @@ class AddHumorActivity : AppCompatActivity() {
         binding = ActivityAddHumorBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val factory = AppViewModelFactory(
+            DependencyProvider.auth,
+            DependencyProvider.databaseRepository
+        )
         viewModel = ViewModelProvider(
-            this,
-            AddHumorViewModelFactory(
-                DependencyProvider.databaseRepository,
-                DependencyProvider.auth
-            )
-        ).get(AddHumorViewModel::class.java)
+            this, factory)[AddHumorViewModel::class.java]
+        
 
         existingNote = intent.getParcelableExtra("EDIT_NOTE")
 
