@@ -12,7 +12,6 @@ import com.example.apphumor.databinding.ActivityCadastroBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.viewmodel.CadastroViewModel
 import com.example.apphumor.viewmodel.CadastroViewModelFactory // NOVO: Import da Factory
-import com.example.apphumor.viewmodel.LoginActivity
 import com.google.firebase.auth.FirebaseAuth
 
 class CadastroActivity : AppCompatActivity() {

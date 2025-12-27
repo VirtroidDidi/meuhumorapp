@@ -4,7 +4,6 @@ package com.example.apphumor.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider // Adicionado
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.repository.DatabaseRepository
@@ -87,22 +86,5 @@ class AddHumorViewModel(
      */
     fun resetSaveStatus() {
         _saveStatus.value = SaveState.Idle
-    }
-}
-
-/**
- * Factory personalizada para instanciar AddHumorViewModel com as dependências necessárias.
- */
-class AddHumorViewModelFactory(
-    private val repository: DatabaseRepository,
-    private val auth: FirebaseAuth
-) : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(AddHumorViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return AddHumorViewModel(repository, auth) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

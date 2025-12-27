@@ -1,72 +1,75 @@
-package com.example.apphumor.viewmodel
+package com.example.apphumor
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import android.content.Intent
+import android.os.Bundle
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import com.example.apphumor.databinding.ActivityLoginBinding
+import com.example.apphumor.di.DependencyProvider
+import com.example.apphumor.viewmodel.AppViewModelFactory
+import com.example.apphumor.viewmodel.LoginViewModel
 
-/**
- * [LoginViewModel]
- * Gerencia a lógica de autenticação de login, controlando o estado de sucesso,
- * carregamento e possíveis erros do Firebase Auth.
- */
-class LoginViewModel : ViewModel() {
+class LoginActivity : AppCompatActivity() {
 
-    private val auth = FirebaseAuth.getInstance()
+    private lateinit var binding: ActivityLoginBinding
+    private lateinit var viewModel: LoginViewModel
 
-    // Estados observáveis pela View. Usamos MutableLiveData internamente para garantir que apenas o VM os modifique.
-    private val _loginSuccess = MutableLiveData<Boolean>()
-    private val _errorMessage = MutableLiveData<String?>()
-    private val _isLoading = MutableLiveData<Boolean>()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-    // LiveData exposto (Somente leitura para a Activity)
-    val loginSuccess: LiveData<Boolean> = _loginSuccess
-    val errorMessage: MutableLiveData<String?> = _errorMessage
-    val isLoading: LiveData<Boolean> = _isLoading
+        // 1. Injeção de Dependência Manual
+        val factory = AppViewModelFactory(
+            DependencyProvider.auth,
+            DependencyProvider.databaseRepository
+        )
+        viewModel = ViewModelProvider(this, factory)[LoginViewModel::class.java]
 
-    /**
-     * Tenta autenticar o usuário com e-mail e senha.
-     * Expõe o resultado via LiveData (sucesso ou mensagem de erro).
-     * @param email O e-mail do usuário.
-     * @param senha A senha do usuário.
-     */
-    fun loginUser(email: String, senha: String) {
-        _isLoading.value = true
-
-        // Validação de entrada para evitar chamadas desnecessárias ao Firebase
-        if (email.isBlank() || senha.isBlank()) {
-            _errorMessage.value = "Preencha todos os campos."
-            _isLoading.value = false
-            return
+        // 2. Verificar se já está logado
+        if (DependencyProvider.auth.currentUser != null) {
+            goToHome()
         }
 
-        auth.signInWithEmailAndPassword(email, senha)
-            .addOnCompleteListener { task ->
-                _isLoading.value = false
-                if (task.isSuccessful) {
-                    _loginSuccess.value = true
-                } else {
-                    // Mapeamento e tratamento de exceções do Firebase para feedback claro
-                    val exception = task.exception
-                    when (exception) {
-                        is FirebaseAuthInvalidUserException ->
-                            _errorMessage.value = "Usuário não encontrado."
-                        is FirebaseAuthInvalidCredentialsException ->
-                            _errorMessage.value = "Senha incorreta ou credenciais inválidas."
-                        else ->
-                            _errorMessage.value = "Falha ao realizar o login. Tente novamente."
-                    }
-                }
-            }
+        setupListeners()
+        setupObservers()
     }
 
-    /**
-     * Limpa o estado de erro após o erro ter sido consumido pela View (exibido como Toast).
-     * Isso impede que o Toast reapareça em mudanças de configuração (rotação de tela, etc.).
-     */
-    fun clearErrorMessage() {
-        _errorMessage.value = null
+    private fun setupListeners() {
+        binding.textCadastro.setOnClickListener {
+            startActivity(Intent(this, CadastroActivity::class.java))
+        }
+
+        binding.btnLogin.setOnClickListener {
+            val email = binding.editLoginEmail.text.toString().trim()
+            val senha = binding.editLoginSenha.text.toString()
+            viewModel.loginUser(email, senha)
+        }
+    }
+
+    private fun setupObservers() {
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.btnLogin.isEnabled = !isLoading
+            binding.btnLogin.text = if (isLoading) "Entrando..." else getString(R.string.action_login)
+        }
+
+        viewModel.errorMessage.observe(this) { message ->
+            message?.let {
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                viewModel.clearErrorMessage()
+            }
+        }
+
+        viewModel.loginSuccess.observe(this) { isSuccess ->
+            if (isSuccess) {
+                goToHome()
+            }
+        }
+    }
+
+    private fun goToHome() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 }

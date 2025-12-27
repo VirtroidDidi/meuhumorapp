@@ -4,15 +4,12 @@ import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 
-/**
- * Service Locator (Container Manual).
- * Centraliza a criação de objetos complexos.
- */
 object DependencyProvider {
 
     // 1. Fonte de Dados (Database)
-    // Instanciamos o FirebaseDatabase aqui.
     private val firebaseDatabase: FirebaseDatabase by lazy {
+        // ATENÇÃO: NÃO COLOQUE .setPersistenceEnabled(true) AQUI!
+        // Ela já está no AppHumorApplication.kt
         FirebaseDatabase.getInstance()
     }
 
@@ -22,7 +19,6 @@ object DependencyProvider {
     }
 
     // 3. Repositório
-    // Injetamos o firebaseDatabase dentro dele!
     val databaseRepository: DatabaseRepository by lazy {
         DatabaseRepository(firebaseDatabase)
     }
