@@ -63,7 +63,10 @@ class InsightsViewModel(
     }
 
     private fun calculateInsights(notes: List<HumorNote>, range: TimeRange): List<Insight> {
-        if (notes.isEmpty()) return emptyList()
+        // CORREÇÃO: Se não houver notas no total, já retornamos o aviso.
+        if (notes.isEmpty()) {
+            return listOf(createEmptyInsight("Nenhum registro no período."))        }
+
 
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
