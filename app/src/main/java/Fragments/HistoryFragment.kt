@@ -18,6 +18,9 @@ import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
 import com.example.apphumor.viewmodel.AppViewModelFactory // <--- IMPORTANTE: Nova Factory
 import com.example.apphumor.viewmodel.HomeViewModel
+import androidx.recyclerview.widget.ItemTouchHelper
+import com.google.android.material.snackbar.Snackbar
+import com.example.apphumor.utils.SwipeToDeleteCallback
 // Removido: import com.example.apphumor.viewmodel.HomeViewModelFactory (Não existe mais)
 
 class HistoryFragment : Fragment() {
@@ -64,6 +67,7 @@ class HistoryFragment : Fragment() {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HistoryFragment.adapter
         }
+        setupSwipeToDelete()
     }
 
     private fun setupSearchAndFilters() {
@@ -122,6 +126,33 @@ class HistoryFragment : Fragment() {
                 binding.btnFilter.setIconTintResource(R.color.black)
             }
         }
+    }
+    private fun setupSwipeToDelete() {
+        val swipeHandler = SwipeToDeleteCallback(requireContext()) { position ->
+            val currentList = adapter.currentList
+
+            if (position >= 0 && position < currentList.size) {
+                val noteToDelete = currentList[position]
+
+                // 1. Deleta usando o mesmo ViewModel (que já tem a lógica pronta)
+                viewModel.deleteNote(noteToDelete)
+
+                // 2. Mostra o Snackbar de desfazer
+                showUndoSnackbar()
+            }
+        }
+
+        val itemTouchHelper = ItemTouchHelper(swipeHandler)
+        // Atenção ao ID do RecyclerView aqui, que é diferente da Home
+        itemTouchHelper.attachToRecyclerView(binding.recyclerViewAllNotes)
+    }
+
+    private fun showUndoSnackbar() {
+        Snackbar.make(binding.root, "Registro excluído", Snackbar.LENGTH_LONG)
+            .setAction("DESFAZER") {
+                viewModel.undoDelete()
+            }
+            .show()
     }
 
     override fun onDestroyView() {

@@ -40,6 +40,8 @@ firebaseCommonKtx = "21.0.0"
 navigationFragmentKtx = "2.9.6"
 recyclerview = "1.4.0"
 workRuntimeKtx = "2.11.0"
+foundation = "1.10.0"
+uiGraphics = "1.10.0"
 
 [libraries]
 androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archCoreTesting" }
@@ -91,6 +93,8 @@ material-v1120 = { module = "com.google.android.material:material", version.ref 
 firebase-database-ktx = { group = "com.google.firebase", name = "firebase-database-ktx", version.ref = "firebaseDatabaseKtx" }
 firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommonKtx" }
 material-v1130 = { module = "com.google.android.material:material", version.ref = "googleMaterialVersion" }
+androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

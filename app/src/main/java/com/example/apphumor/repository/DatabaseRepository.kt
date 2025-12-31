@@ -105,7 +105,9 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
         return try {
             db.child(uid).setValue(user)
             Result.Success(Unit)
-        } catch (e: Exception) { Result.Error(e) }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 
     suspend fun updateUser(user: User): Result<Unit> {
@@ -121,7 +123,9 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
             )
             db.child(uid).updateChildren(updates)
             Result.Success(Unit)
-        } catch (e: Exception) { Result.Error(e) }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 
     suspend fun getUser(userId: String): Result<User?> {
@@ -129,7 +133,9 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
             val snapshot = db.child(userId).get().await()
             val user = snapshot.getValue(User::class.java)
             Result.Success(user?.copy(uid = snapshot.key))
-        } catch (e: Exception) { Result.Error(e) }
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 
     suspend fun getHumorNotesOnce(userId: String): List<HumorNote> {
@@ -139,6 +145,38 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
                 val rawNote = child.getValue(HumorNote::class.java)
                 rawNote?.copy(id = child.key)
             }
-        } catch (e: Exception) { emptyList() }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+
+    suspend fun deleteHumorNote(userId: String, noteId: String): Result<Unit> {
+        return try {
+            db.child(userId).child("notes").child(noteId).removeValue().await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
+    }
+
+    /**
+     * Restaura uma nota mantendo o MESMO ID e TIMESTAMP original.
+     * Fundamental para a funcionalidade de "Undo".
+     */
+    suspend fun restoreHumorNote(userId: String, note: HumorNote): Result<Unit> {
+        val noteId = note.id ?: return Result.Error(Exception("ID nulo na restauração"))
+        return try {
+            // Forçamos o set no caminho específico do ID antigo
+            val ref = db.child(userId).child("notes").child(noteId)
+
+            // Garantimos que isSynced seja true, pois estamos restaurando algo que o user "quer" ver
+            val noteToRestore = note.copy(isSynced = true)
+
+            ref.setValue(noteToRestore).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e)
+        }
     }
 }

@@ -5,18 +5,22 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.switchMap
+import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.SortOrder
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 class HomeViewModel(
     private val auth: FirebaseAuth,
-    private val dbRepository: DatabaseRepository
+    private val dbRepository: DatabaseRepository,
+    private var lastDeletedNote: HumorNote? = null
+
 ) : ViewModel() {
 
     // 1. INPUTS
@@ -122,10 +126,12 @@ class HomeViewModel(
                 val limit = now - (7 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
+
             FilterTimeRange.LAST_30_DAYS -> {
                 val limit = now - (30 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
+
             FilterTimeRange.ALL_TIME -> result
         }
 
@@ -184,6 +190,33 @@ class HomeViewModel(
 
         return notes.filter { note ->
             note.timestamp in todayStart until todayEnd
+        }
+    }
+
+    fun deleteNote(note: HumorNote) {
+        val userId = userIdLiveData.value ?: return
+        val noteId = note.id ?: return
+
+        // 1. Guarda na memória para possível Undo
+        lastDeletedNote = note
+
+        // 2. Remove do Banco
+        viewModelScope.launch {
+            dbRepository.deleteHumorNote(userId, noteId)
+            // O LiveData allNotesSource atualizará a UI automaticamente via Realtime Database
+        }
+    }
+
+    fun undoDelete() {
+        val userId = userIdLiveData.value ?: return
+        val noteToRestore = lastDeletedNote ?: return
+
+        viewModelScope.launch {
+            // Chama a função específica de restauração que criamos
+            dbRepository.restoreHumorNote(userId, noteToRestore)
+
+            // Limpa a memória após restaurar
+            lastDeletedNote = null
         }
     }
 }

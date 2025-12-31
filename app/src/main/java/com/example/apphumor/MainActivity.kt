@@ -31,7 +31,22 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     // Lançador de permissão para Notificações (Android 13+)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { _ -> }
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // 1. Usuário aceitou
+            android.util.Log.d("PermissaoNotificacao", "Permissão CONCEDIDA pelo usuário.")
+            // Opcional: Se quiser dar um feedback visual sutil
+            // Toast.makeText(this, "Lembretes ativados!", Toast.LENGTH_SHORT).show()
+        } else {
+            // 2. Usuário negou
+            android.util.Log.w("PermissaoNotificacao", "Permissão NEGADA pelo usuário.")
+
+            // DICA DE UX (Pode implementar no futuro):
+            // Aqui seria o lugar ideal para mostrar um Dialog explicando:
+            // "O AppHumor precisa de notificações para te lembrar de registrar seu dia.
+            // Vá em Configurações para ativar."
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,12 +76,20 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     }
 
     private fun askNotificationPermission() {
+        // Essa permissão só existe no Android 13 (API 33) ou superior
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) !=
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+
+            // Verifica se JÁ temos a permissão
+            if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+                android.util.Log.d("PermissaoNotificacao", "Permissão já garantida anteriormente.")
+            } else {
+                // Se não temos, pedimos ao sistema
+                // O sistema decide se mostra o popup ou se o usuário já negou permanentemente
+                requestPermissionLauncher.launch(permission)
             }
+        } else {
+            android.util.Log.d("PermissaoNotificacao", "Android < 13: Permissão concedida automaticamente na instalação.")
         }
     }
 
