@@ -9,20 +9,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.databinding.FragmentHomeBinding
 import com.example.apphumor.di.DependencyProvider
-import com.example.apphumor.models.HumorNote
+import com.example.apphumor.utils.SwipeToDeleteCallback // Import da nossa nova classe
 import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.HomeViewModel
-import java.util.*
+import com.google.android.material.snackbar.Snackbar
 
-/**
- * [HomeFragment]
- * Exibe as notas registradas hoje e o progresso da sequência.
- * Atualizado para usar FragmentHomeBinding e strings.xml.
- */
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -49,13 +45,11 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // --- MUDANÇA AQUI: Usando a Factory Global ---
         val factory = AppViewModelFactory(
             DependencyProvider.auth,
             DependencyProvider.databaseRepository
         )
         viewModel = ViewModelProvider(this, factory)[HomeViewModel::class.java]
-        // ---------------------------------------------
 
         setupRecyclerView()
         setupButton()
@@ -75,6 +69,38 @@ class HomeFragment : Fragment() {
             setHasFixedSize(true)
             adapter = this@HomeFragment.adapter
         }
+
+        // Chamada limpa e corrigida!
+        setupSwipeToDelete()
+    }
+
+    private fun setupSwipeToDelete() {
+        // Usamos a classe utilitária para limpar o código e corrigir os imports de gráficos
+        val swipeHandler = SwipeToDeleteCallback(requireContext()) { position ->
+            val currentList = adapter.currentList
+
+            // Verificação de segurança
+            if (position >= 0 && position < currentList.size) {
+                val noteToDelete = currentList[position]
+
+                // 1. Lógica de negócio (ViewModel)
+                viewModel.deleteNote(noteToDelete)
+
+                // 2. Feedback Visual
+                showUndoSnackbar()
+            }
+        }
+
+        val itemTouchHelper = ItemTouchHelper(swipeHandler)
+        itemTouchHelper.attachToRecyclerView(binding.recyclerViewNotes)
+    }
+
+    private fun showUndoSnackbar() {
+        Snackbar.make(binding.root, "Registro excluído", Snackbar.LENGTH_LONG)
+            .setAction("DESFAZER") {
+                viewModel.undoDelete()
+            }
+            .show()
     }
 
     private fun setupButton() {
@@ -92,7 +118,6 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // Observa as notas de hoje filtradas pelo ViewModel
         viewModel.todayNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
                 binding.recyclerViewNotes.visibility = View.VISIBLE
@@ -115,7 +140,6 @@ class HomeFragment : Fragment() {
 
         val maxDays = binding.progressCard.progressBar.max
 
-        // Uso de strings.xml com suporte a argumentos dinâmicos (%1$d)
         var descriptionText = when {
             sequence >= maxDays -> getString(R.string.sequence_congrats)
             sequence > 0 -> getString(R.string.sequence_days, sequence)
