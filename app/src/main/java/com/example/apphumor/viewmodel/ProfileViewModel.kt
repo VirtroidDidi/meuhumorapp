@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
 import com.example.apphumor.utils.HumorUtils
+import com.example.apphumor.utils.InsightAnalysis
+import com.example.apphumor.utils.InsightResult
 
 
 data class MoodStat(
@@ -29,6 +31,8 @@ class ProfileViewModel(
     private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
+    private val _insight = MutableLiveData<InsightResult>()
+    val insight: LiveData<InsightResult> = _insight
     // --- ESTADOS ---
     private val _userProfile = MutableLiveData<User?>()
     val userProfile: LiveData<User?> = _userProfile
@@ -69,26 +73,33 @@ class ProfileViewModel(
         val userId = auth.currentUser?.uid ?: return
 
         viewModelScope.launch {
+            // Buscamos todas as notas
             val notes = dbRepository.getHumorNotesOnce(userId)
 
             if (notes.isNotEmpty()) {
+                // 1. O GRÁFICO (Mantém sua lógica visual limpa)
                 val stats = notes
                     .groupingBy { it.humor }
                     .eachCount()
                     .map { (humorName, count) ->
                         val style = HumorUtils.getMoodStyle(humorName)
-
                         MoodStat(
-                            labelRes = style.labelRes, // Agora pegamos o ID traduzido do Utils
+                            labelRes = style.labelRes,
                             count = count,
                             colorRes = style.contentColorRes
                         )
                     }
                     .sortedByDescending { it.count }
-
                 _moodStats.value = stats
+
+                // 2. O INSIGHT INTELIGENTE (Aqui chamamos o novo arquivo)
+                // Ele vai processar o "Melhor Dia" e a "Dica" automaticamente
+                val smartInsight = InsightAnalysis.generateInsight(notes)
+                _insight.value = smartInsight
+
             } else {
                 _moodStats.value = emptyList()
+                _insight.value = InsightAnalysis.generateInsight(emptyList())
             }
         }
     }

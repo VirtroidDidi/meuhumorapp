@@ -79,7 +79,6 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Inicialização do ViewModel com Factory Global
         viewModel = ViewModelProvider(
             this,
             ProfileViewModelFactory(DependencyProvider.auth, DependencyProvider.databaseRepository)
@@ -93,23 +92,19 @@ class ProfileFragment : Fragment() {
 
     private fun setupChartUI() {
         binding.pieChartProfile.apply {
-            description.isEnabled = false // Remove descrição "Description Label"
-            legend.isEnabled = false      // Remove legenda padrão (poluição visual)
-
-            isDrawHoleEnabled = true      // Estilo "Donut"
+            description.isEnabled = false
+            legend.isEnabled = false
+            isDrawHoleEnabled = true
             setHoleColor(Color.TRANSPARENT)
             holeRadius = 50f
             transparentCircleRadius = 55f
-
-            setEntryLabelColor(Color.BLACK) // Cor do texto dentro da fatia
+            setEntryLabelColor(Color.BLACK)
             setEntryLabelTextSize(10f)
-
-            setNoDataText("") // Remove texto padrão de "No Data" pois usamos um TextView customizado
+            setNoDataText("")
         }
     }
 
     private fun setupListeners() {
-        // Botão Salvar/Editar
         binding.btnEditProfile.setOnClickListener {
             if (isEditing) {
                 val newName = binding.etUserName.text.toString().trim()
@@ -120,38 +115,24 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        // Clique na foto (Sempre ativo)
-        binding.ivProfileAvatar.setOnClickListener {
-            pickImageLauncher.launch("image/*")
-        }
-
-        // Ícone pequeno da câmera
-        binding.ivEditIconIndicator.setOnClickListener {
-            pickImageLauncher.launch("image/*")
-        }
-
+        binding.ivProfileAvatar.setOnClickListener { pickImageLauncher.launch("image/*") }
+        binding.ivEditIconIndicator.setOnClickListener { pickImageLauncher.launch("image/*") }
         binding.btnLogoutFragment.setOnClickListener { viewModel.logout() }
 
-        // Seletor de Horário
         binding.tvSelectedTimePerfil.setOnClickListener {
             if (isEditing && binding.switchNotificacaoPerfil.isChecked) showTimePickerDialog()
         }
 
-        // Lógica do Switch de Notificação com Permissão
         binding.switchNotificacaoPerfil.setOnCheckedChangeListener { buttonView, isChecked ->
-            // isPressed garante que foi interação do usuário, não do Observer
             if (buttonView.isPressed) {
                 if (isChecked) {
-                    // Tentando LIGAR
                     if (hasNotificationPermission()) {
                         viewModel.setDraftNotificationEnabled(true)
                     } else {
-                        // Sem permissão: desliga visualmente e pede permissão
                         buttonView.isChecked = false
                         requestNotificationPermission()
                     }
                 } else {
-                    // Tentando DESLIGAR (sempre permitido)
                     viewModel.setDraftNotificationEnabled(false)
                 }
             }
@@ -159,7 +140,6 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        // 1. Dados do Usuário
         viewModel.userProfile.observe(viewLifecycleOwner) { user ->
             user?.let {
                 binding.etUserEmail.setText(it.email)
@@ -169,25 +149,20 @@ class ProfileFragment : Fragment() {
             }
         }
 
-        // 2. Foto de Perfil (Correção Bug Roxo)
         viewModel.draftPhotoBase64.observe(viewLifecycleOwner) { base64 ->
             if (base64 != null) {
                 val bitmap = ImageUtils.base64ToBitmap(base64)
                 binding.ivProfileAvatar.setImageBitmap(bitmap)
-                binding.ivProfileAvatar.imageTintList = null // Remove filtro
+                binding.ivProfileAvatar.imageTintList = null
                 binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
             } else {
                 binding.ivProfileAvatar.setImageResource(R.drawable.ic_usuario_24)
-                val primaryColor = MaterialColors.getColor(
-                    binding.ivProfileAvatar,
-                    com.google.android.material.R.attr.colorPrimary
-                )
-                binding.ivProfileAvatar.setColorFilter(primaryColor) // Aplica filtro
+                val primaryColor = MaterialColors.getColor(binding.ivProfileAvatar, com.google.android.material.R.attr.colorPrimary)
+                binding.ivProfileAvatar.setColorFilter(primaryColor)
                 binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_INSIDE
             }
         }
 
-        // 3. Estado do Switch
         viewModel.draftNotificationEnabled.observe(viewLifecycleOwner) { isEnabled ->
             if (binding.switchNotificacaoPerfil.isChecked != isEnabled) {
                 binding.switchNotificacaoPerfil.isChecked = isEnabled
@@ -195,55 +170,41 @@ class ProfileFragment : Fragment() {
             binding.llHorarioContainerPerfil.alpha = if (isEnabled) 1.0f else 0.4f
         }
 
-        // 4. Horário
         viewModel.draftTime.observe(viewLifecycleOwner) { (h, m) ->
-            binding.tvSelectedTimePerfil.text =
-                String.format(Locale.getDefault(), "%02d:%02d", h, m)
+            binding.tvSelectedTimePerfil.text = String.format(Locale.getDefault(), "%02d:%02d", h, m)
         }
 
-        // 5. Loading
         viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
             binding.progressBarProfile.isVisible = isLoading
             binding.btnEditProfile.isEnabled = !isLoading
             binding.ivProfileAvatar.isEnabled = !isLoading
         }
 
-        // 6. Mensagens de Status
         viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
             status?.let {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                if (it.contains("sucesso", ignoreCase = true) && !it.contains(
-                        "Foto",
-                        ignoreCase = true
-                    )
-                ) {
+                if (it.contains("sucesso", ignoreCase = true) && !it.contains("Foto", ignoreCase = true)) {
                     setEditingMode(false)
                 }
                 viewModel.clearStatus()
             }
         }
 
-        // 7. Agendamento
         viewModel.scheduleNotificationEvent.observe(viewLifecycleOwner) { event ->
             event?.let { (enabled, time) ->
                 val parts = time.split(":")
-                NotificationScheduler.scheduleDailyReminder(
-                    requireContext(),
-                    parts[0].toInt(),
-                    parts[1].toInt(),
-                    enabled
-                )
+                NotificationScheduler.scheduleDailyReminder(requireContext(), parts[0].toInt(), parts[1].toInt(), enabled)
                 viewModel.clearScheduleEvent()
             }
         }
 
-        // 8. Logout
         viewModel.logoutEvent.observe(viewLifecycleOwner) { loggedOut ->
             if (loggedOut) {
                 logoutListener?.onLogoutSuccess()
                 viewModel.clearLogoutEvent()
             }
         }
+
         viewModel.moodStats.observe(viewLifecycleOwner) { stats ->
             if (stats.isNullOrEmpty()) {
                 binding.pieChartProfile.isVisible = false
@@ -254,9 +215,33 @@ class ProfileFragment : Fragment() {
                 updateChartData(stats)
             }
         }
+
+        // --- NOVO: OBSERVAR O INSIGHT (Faltava isso!) ---
+        viewModel.insight.observe(viewLifecycleOwner) { insight ->
+            insight?.let {
+                binding.tvInsightTitle.text = it.title
+                binding.tvInsightMessage.text = it.message
+                binding.ivInsightIcon.setImageResource(it.iconRes)
+
+                // Segura para evitar crash se a cor não existir
+                try {
+                    val colorContent = ContextCompat.getColor(requireContext(), it.colorRes)
+                    val colorBackground = ContextCompat.getColor(requireContext(), it.backgroundTint)
+
+                    binding.ivInsightIcon.setColorFilter(colorContent)
+                    binding.tvInsightTitle.setTextColor(colorContent)
+                    binding.cardSmartInsight.setCardBackgroundColor(colorBackground)
+
+                    // Garante que o card fique visível
+                    binding.cardSmartInsight.isVisible = true
+                } catch (e: Exception) {
+                    // Fallback para cinza se a cor falhar
+                    binding.cardSmartInsight.setCardBackgroundColor(Color.LTGRAY)
+                }
+            }
+        }
     }
 
-    // --- FUNÇÕES AUXILIARES ---
     private fun updateChartData(stats: List<MoodStat>) {
         val entries = ArrayList<PieEntry>()
         val colors = ArrayList<Int>()
@@ -264,35 +249,24 @@ class ProfileFragment : Fragment() {
         var total = 0
         stats.forEach { stat ->
             total += stat.count
-
-            // LÓGICA DE LIMPEZA VISUAL:
-            // Se tiver menos de 2 registros (fatia muito fina), não mostramos o texto (label).
-            // Usamos requireContext().getString() para pegar a tradução correta.
+            // Lógica de limpeza: só mostra texto se tiver 3 ou mais
             val labelText = if (stat.count < 3) "" else requireContext().getString(stat.labelRes)
 
             entries.add(PieEntry(stat.count.toFloat(), labelText))
-
             val colorInt = ContextCompat.getColor(requireContext(), stat.colorRes)
             colors.add(colorInt)
         }
 
-        val dataSet = PieDataSet(entries, "") // Título vazio para remover label interna do dataset
+        val dataSet = PieDataSet(entries, "")
         dataSet.colors = colors
         dataSet.sliceSpace = 3f
         dataSet.selectionShift = 5f
-
-        // Configuração para jogar os valores para fora se necessário (opcional, mas ajuda)
-        // dataSet.yValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
-
         dataSet.valueTextSize = 12f
         dataSet.valueTextColor = Color.WHITE
 
         val data = PieData(dataSet)
         data.setValueFormatter(object : com.github.mikephil.charting.formatter.ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                // Se o valor for muito pequeno (1), você também pode optar por esconder o número
-                // retornando "" aqui também, se quiser um visual super limpo.
-                // Por enquanto, deixei mostrando o número.
                 return value.toInt().toString()
             }
         })
@@ -300,15 +274,15 @@ class ProfileFragment : Fragment() {
         binding.pieChartProfile.data = data
         binding.pieChartProfile.centerText = "Total\n$total"
         binding.pieChartProfile.setCenterTextSize(14f)
-        binding.pieChartProfile.setCenterTextColor(ContextCompat.getColor(requireContext(), R.color.black)) // Cuidado: R.color.black precisa existir ou use Color.BLACK
+        binding.pieChartProfile.setCenterTextColor(ContextCompat.getColor(requireContext(), R.color.black))
 
-        // Desabilitar a legenda (os quadradinhos coloridos embaixo) ajuda a limpar também
         binding.pieChartProfile.legend.isEnabled = false
         binding.pieChartProfile.description.isEnabled = false
 
         binding.pieChartProfile.animateY(1400, Easing.EaseInOutQuad)
         binding.pieChartProfile.invalidate()
     }
+
     private fun showTimePickerDialog() {
         val current = viewModel.draftTime.value ?: Pair(20, 0)
         TimePickerDialog(
@@ -325,17 +299,14 @@ class ProfileFragment : Fragment() {
         binding.etUserName.isEnabled = editing
         binding.etUserIdade.isEnabled = editing
         binding.switchNotificacaoPerfil.isEnabled = editing
-        binding.tvSelectedTimePerfil.isEnabled =
-            editing && binding.switchNotificacaoPerfil.isChecked
+        binding.tvSelectedTimePerfil.isEnabled = editing && binding.switchNotificacaoPerfil.isChecked
 
-        binding.btnEditProfile.text =
-            if (editing) getString(R.string.action_save_changes) else getString(R.string.action_edit_profile)
+        binding.btnEditProfile.text = if (editing) getString(R.string.action_save_changes) else getString(R.string.action_edit_profile)
         binding.btnEditProfile.setIconResource(if (editing) R.drawable.ic_save_24 else R.drawable.ic_edit_24)
 
+        // Esconde o botão de logout durante a edição
         binding.btnLogoutFragment.isVisible = !editing
     }
-
-    // --- LÓGICA DE PERMISSÕES ---
 
     private fun hasNotificationPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -358,9 +329,7 @@ class ProfileFragment : Fragment() {
             binding.root,
             "É necessário permitir notificações para receber os lembretes.",
             Snackbar.LENGTH_LONG
-        ).setAction("Configurações") {
-            // Intent opcional para configurações
-        }.show()
+        ).setAction("Configurações") { }.show()
     }
 
     override fun onAttach(context: Context) {

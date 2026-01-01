@@ -277,48 +277,100 @@
             app:layout_constraintEnd_toEndOf="parent"/>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_insights_chart"
+            android:id="@+id/card_smart_insight"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
             android:layout_marginTop="24dp"
             app:cardCornerRadius="24dp"
-            app:cardElevation="2dp"
             app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardBackgroundColor="#F5F5F5"
             app:contentPadding="20dp"
             app:layout_constraintTop_toBottomOf="@id/progressBarProfile">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <ImageView
+                    android:id="@+id/iv_insight_icon"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_mood_happy"
+                    android:layout_marginEnd="16dp"
+                    app:tint="@color/black"
+                    tools:ignore="ContentDescription" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="Resumo Emocional"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_gravity="center_horizontal"
-                    android:textColor="?attr/colorOnSurface"/>
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_chart_empty_state"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Nenhum registro ainda..."
-                    android:layout_gravity="center"
-                    android:layout_marginTop="40dp"
-                    android:layout_marginBottom="40dp"
-                    android:visibility="gone"/>
+                    <TextView
+                        android:id="@+id/tv_insight_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Analisando..."
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:textColor="@color/black"/>
 
-                <com.github.mikephil.charting.charts.PieChart
-                    android:id="@+id/pieChartProfile"
-                    android:layout_width="match_parent"
-                    android:layout_height="250dp"
-                    android:layout_marginTop="16dp"/>
+                    <TextView
+                        android:id="@+id/tv_insight_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gerando dicas..."
+                        android:textSize="14sp"
+                        android:layout_marginTop="4dp"
+                        android:textColor="#505050"/>
+                </LinearLayout>
             </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_insights_chart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:contentPadding="20dp"
+            app:layout_constraintTop_toBottomOf="@id/card_smart_insight"> <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resumo Emocional"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_gravity="center_horizontal"
+                android:textColor="?attr/colorOnSurface"/>
+
+            <TextView
+                android:id="@+id/tv_chart_empty_state"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nenhum registro ainda..."
+                android:layout_gravity="center"
+                android:layout_marginTop="40dp"
+                android:layout_marginBottom="40dp"
+                android:visibility="gone"/>
+
+            <com.github.mikephil.charting.charts.PieChart
+                android:id="@+id/pieChartProfile"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:layout_marginTop="16dp"/>
+        </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
@@ -328,6 +380,7 @@
             android:layout_height="56dp"
             android:layout_marginHorizontal="20dp"
             android:layout_marginTop="32dp"
+            android:layout_marginBottom="32dp"
             android:text="@string/action_logout"
             android:textColor="?attr/colorError"
             app:strokeColor="?attr/colorError"
