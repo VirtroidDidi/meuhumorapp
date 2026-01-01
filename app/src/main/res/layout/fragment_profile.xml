@@ -15,16 +15,18 @@
 
         <View
             android:id="@+id/view_header_bg"
-            android:layout_width="413dp"
-            android:layout_height="150dp"
+            android:layout_width="0dp"
+            android:layout_height="160dp"
             android:background="@drawable/background_header_curved"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/iv_profile_avatar"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:layout_marginTop="60dp"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_marginTop="70dp"
             android:elevation="12dp"
             android:padding="0dp"
             android:scaleType="centerCrop"
@@ -39,8 +41,8 @@
 
         <ImageView
             android:id="@+id/iv_edit_icon_indicator"
-            android:layout_width="38dp"
-            android:layout_height="38dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:src="@drawable/ic_edit_24"
             android:background="@drawable/circle_background_insight"
             android:backgroundTint="?attr/colorPrimary"
@@ -49,19 +51,18 @@
             app:tint="?attr/colorOnPrimary"
             app:layout_constraintBottom_toBottomOf="@id/iv_profile_avatar"
             app:layout_constraintEnd_toEndOf="@id/iv_profile_avatar"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginEnd="6dp"
+            android:layout_marginBottom="6dp"/>
 
         <TextView
             android:id="@+id/tv_welcome_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             tools:text="Usuário"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="28sp"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:letterSpacing="-0.02"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/iv_profile_avatar" />
@@ -70,7 +71,6 @@
             android:id="@+id/tv_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
             android:text="@string/profile_subtitle"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp"
@@ -83,12 +83,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="32dp"
-            app:cardCornerRadius="28dp"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-            app:contentPadding="24dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLowest"
+            app:contentPadding="20dp"
             app:layout_constraintTop_toBottomOf="@id/tv_subtitle">
 
             <LinearLayout
@@ -99,24 +100,20 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="20dp">
-
+                    android:layout_marginBottom="16dp">
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:src="@drawable/ic_usuario_24"
                         app:tint="?attr/colorPrimary"/>
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/section_data"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="18sp"
                         android:textStyle="bold"
-                        android:layout_marginStart="12dp"/>
+                        android:textSize="16sp"
+                        android:layout_marginStart="8dp"/>
                 </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -124,10 +121,6 @@
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
                     android:hint="@string/hint_name">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_name"
@@ -142,11 +135,7 @@
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/hint_email">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_email"
@@ -161,11 +150,7 @@
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/hint_id">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_user_idade"
@@ -182,12 +167,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="20dp"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-            app:contentPadding="24dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="24dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLowest"
+            app:contentPadding="20dp"
             app:layout_constraintTop_toBottomOf="@id/card_data">
 
             <LinearLayout
@@ -200,22 +185,19 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="20dp">
-
+                    android:layout_marginBottom="16dp">
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:src="@drawable/ic_edit_24"
                         app:tint="?attr/colorPrimary"/>
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/section_preferences"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="18sp"
-                        android:layout_marginStart="12dp"/>
+                        android:textSize="16sp"
+                        android:layout_marginStart="8dp"/>
                 </LinearLayout>
 
                 <LinearLayout
@@ -228,8 +210,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_daily_reminder"
-                        android:textSize="16sp"
-                        android:textColor="?attr/colorOnSurface"/>
+                        android:textSize="14sp"/>
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/switch_notificacao_perfil"
                         android:layout_width="wrap_content"
@@ -243,33 +224,32 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="12dp"
                     android:background="@drawable/edit_text_border"
                     android:backgroundTint="?attr/colorSurface"
-                    android:padding="16dp">
+                    android:padding="12dp">
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:src="@drawable/ic_historico_24"
                         app:tint="?attr/colorPrimary"
-                        android:layout_marginEnd="12dp"/>
+                        android:layout_marginEnd="8dp"/>
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="@string/label_reminder_time"
-                        android:textColor="?attr/colorOnSurfaceVariant"/>
+                        android:textSize="14sp"/>
                     <TextView
                         android:id="@+id/tv_selected_time_perfil"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="20:00"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
                         android:textStyle="bold"
                         android:textColor="?attr/colorPrimary"
                         android:background="?attr/selectableItemBackground"
-                        android:paddingHorizontal="8dp"
-                        android:paddingVertical="4dp"/>
+                        android:padding="4dp"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -280,19 +260,11 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="24dp"
             android:text="@string/action_edit_profile"
             app:cornerRadius="16dp"
             app:icon="@drawable/ic_edit_24"
             app:layout_constraintTop_toBottomOf="@id/card_prefs" />
-
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/fragment_insights_container"
-            android:name="com.example.apphumor.InsightsFragment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:layout_constraintTop_toBottomOf="@id/btn_edit_profile"/>
 
         <ProgressBar
             android:id="@+id/progressBarProfile"
@@ -300,9 +272,54 @@
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/fragment_insights_container"
+            app:layout_constraintTop_toBottomOf="@id/btn_edit_profile"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"/>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_insights_chart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="24dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:contentPadding="20dp"
+            app:layout_constraintTop_toBottomOf="@id/progressBarProfile">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resumo Emocional"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:layout_gravity="center_horizontal"
+                    android:textColor="?attr/colorOnSurface"/>
+
+                <TextView
+                    android:id="@+id/tv_chart_empty_state"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nenhum registro ainda..."
+                    android:layout_gravity="center"
+                    android:layout_marginTop="40dp"
+                    android:layout_marginBottom="40dp"
+                    android:visibility="gone"/>
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/pieChartProfile"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:layout_marginTop="16dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_logout_fragment"
@@ -310,14 +327,14 @@
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginHorizontal="20dp"
-            android:layout_marginTop="64dp"
+            android:layout_marginTop="32dp"
             android:text="@string/action_logout"
             android:textColor="?attr/colorError"
             app:strokeColor="?attr/colorError"
             app:cornerRadius="16dp"
             app:icon="@drawable/ic_logout_24"
             app:iconTint="?attr/colorError"
-            app:layout_constraintTop_toBottomOf="@id/fragment_insights_container"/>
+            app:layout_constraintTop_toBottomOf="@id/card_insights_chart"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

@@ -45,6 +45,8 @@ android {
 
 dependencies {
 
+    implementation(libs.mpAndroidChart)
+
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.ui.graphics)
     // Testes Unitários (Local)

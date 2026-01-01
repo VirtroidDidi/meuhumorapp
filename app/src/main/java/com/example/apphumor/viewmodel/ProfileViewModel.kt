@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.example.apphumor.utils.ImageUtils
@@ -14,6 +15,14 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
+import com.example.apphumor.utils.HumorUtils
+
+
+data class MoodStat(
+    val labelRes: Int,
+    val count: Int,
+    val colorRes: Int
+)
 
 class ProfileViewModel(
     private val auth: FirebaseAuth,
@@ -47,8 +56,41 @@ class ProfileViewModel(
     private val _scheduleNotificationEvent = MutableLiveData<Pair<Boolean, String>?>()
     val scheduleNotificationEvent: LiveData<Pair<Boolean, String>?> = _scheduleNotificationEvent
 
+    private val _moodStats = MutableLiveData<List<MoodStat>>()
+    val moodStats: LiveData<List<MoodStat>> = _moodStats
+
     init {
         loadUserProfile()
+        loadMoodStats()
+    }
+
+
+    fun loadMoodStats() {
+        val userId = auth.currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            val notes = dbRepository.getHumorNotesOnce(userId)
+
+            if (notes.isNotEmpty()) {
+                val stats = notes
+                    .groupingBy { it.humor }
+                    .eachCount()
+                    .map { (humorName, count) ->
+                        val style = HumorUtils.getMoodStyle(humorName)
+
+                        MoodStat(
+                            labelRes = style.labelRes, // Agora pegamos o ID traduzido do Utils
+                            count = count,
+                            colorRes = style.contentColorRes
+                        )
+                    }
+                    .sortedByDescending { it.count }
+
+                _moodStats.value = stats
+            } else {
+                _moodStats.value = emptyList()
+            }
+        }
     }
 
     fun loadUserProfile() {
@@ -66,7 +108,8 @@ class ProfileViewModel(
                     _draftPhotoBase64.value = it.fotoBase64 // Carrega a foto atual
                     val parts = it.horarioNotificacao.split(":")
                     if (parts.size == 2) {
-                        _draftTime.value = Pair(parts[0].toIntOrNull() ?: 20, parts[1].toIntOrNull() ?: 0)
+                        _draftTime.value =
+                            Pair(parts[0].toIntOrNull() ?: 20, parts[1].toIntOrNull() ?: 0)
                     }
                 }
             }
@@ -117,11 +160,25 @@ class ProfileViewModel(
     }
 
     // Setters de Draft
-    fun setDraftNotificationEnabled(enabled: Boolean) { _draftNotificationEnabled.value = enabled }
-    fun setDraftTime(hour: Int, minute: Int) { _draftTime.value = Pair(hour, minute) }
-    fun clearScheduleEvent() { _scheduleNotificationEvent.value = null }
-    fun clearStatus() { _updateStatus.value = null }
-    fun clearLogoutEvent() { _logoutEvent.value = false }
+    fun setDraftNotificationEnabled(enabled: Boolean) {
+        _draftNotificationEnabled.value = enabled
+    }
+
+    fun setDraftTime(hour: Int, minute: Int) {
+        _draftTime.value = Pair(hour, minute)
+    }
+
+    fun clearScheduleEvent() {
+        _scheduleNotificationEvent.value = null
+    }
+
+    fun clearStatus() {
+        _updateStatus.value = null
+    }
+
+    fun clearLogoutEvent() {
+        _logoutEvent.value = false
+    }
 
     // Salva APENAS Nome, Idade e Configurações (A foto já foi salva antes)
     fun saveAllChanges(newName: String, newAge: Int) {
@@ -157,7 +214,8 @@ class ProfileViewModel(
         }
     }
 
-    private fun setEditingMode(editing: Boolean) { /* Helper se necessário */ }
+    private fun setEditingMode(editing: Boolean) { /* Helper se necessário */
+    }
 
     fun logout() {
         auth.signOut()

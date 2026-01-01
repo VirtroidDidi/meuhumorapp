@@ -26,6 +26,13 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.snackbar.Snackbar
 import java.util.Locale
 
+import android.graphics.Color
+import com.example.apphumor.viewmodel.MoodStat
+import com.github.mikephil.charting.data.PieData
+import com.github.mikephil.charting.data.PieDataSet
+import com.github.mikephil.charting.data.PieEntry
+import com.github.mikephil.charting.animation.Easing
+
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
@@ -78,9 +85,27 @@ class ProfileFragment : Fragment() {
             ProfileViewModelFactory(DependencyProvider.auth, DependencyProvider.databaseRepository)
         )[ProfileViewModel::class.java]
 
+        setupChartUI()
         setupListeners()
         setupObservers()
         setEditingMode(false)
+    }
+
+    private fun setupChartUI() {
+        binding.pieChartProfile.apply {
+            description.isEnabled = false // Remove descrição "Description Label"
+            legend.isEnabled = false      // Remove legenda padrão (poluição visual)
+
+            isDrawHoleEnabled = true      // Estilo "Donut"
+            setHoleColor(Color.TRANSPARENT)
+            holeRadius = 50f
+            transparentCircleRadius = 55f
+
+            setEntryLabelColor(Color.BLACK) // Cor do texto dentro da fatia
+            setEntryLabelTextSize(10f)
+
+            setNoDataText("") // Remove texto padrão de "No Data" pois usamos um TextView customizado
+        }
     }
 
     private fun setupListeners() {
@@ -187,7 +212,11 @@ class ProfileFragment : Fragment() {
         viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
             status?.let {
                 Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                if (it.contains("sucesso", ignoreCase = true) && !it.contains("Foto", ignoreCase = true)) {
+                if (it.contains("sucesso", ignoreCase = true) && !it.contains(
+                        "Foto",
+                        ignoreCase = true
+                    )
+                ) {
                     setEditingMode(false)
                 }
                 viewModel.clearStatus()
@@ -215,10 +244,71 @@ class ProfileFragment : Fragment() {
                 viewModel.clearLogoutEvent()
             }
         }
+        viewModel.moodStats.observe(viewLifecycleOwner) { stats ->
+            if (stats.isNullOrEmpty()) {
+                binding.pieChartProfile.isVisible = false
+                binding.tvChartEmptyState.isVisible = true
+            } else {
+                binding.pieChartProfile.isVisible = true
+                binding.tvChartEmptyState.isVisible = false
+                updateChartData(stats)
+            }
+        }
     }
 
     // --- FUNÇÕES AUXILIARES ---
+    private fun updateChartData(stats: List<MoodStat>) {
+        val entries = ArrayList<PieEntry>()
+        val colors = ArrayList<Int>()
 
+        var total = 0
+        stats.forEach { stat ->
+            total += stat.count
+
+            // LÓGICA DE LIMPEZA VISUAL:
+            // Se tiver menos de 2 registros (fatia muito fina), não mostramos o texto (label).
+            // Usamos requireContext().getString() para pegar a tradução correta.
+            val labelText = if (stat.count < 3) "" else requireContext().getString(stat.labelRes)
+
+            entries.add(PieEntry(stat.count.toFloat(), labelText))
+
+            val colorInt = ContextCompat.getColor(requireContext(), stat.colorRes)
+            colors.add(colorInt)
+        }
+
+        val dataSet = PieDataSet(entries, "") // Título vazio para remover label interna do dataset
+        dataSet.colors = colors
+        dataSet.sliceSpace = 3f
+        dataSet.selectionShift = 5f
+
+        // Configuração para jogar os valores para fora se necessário (opcional, mas ajuda)
+        // dataSet.yValuePosition = PieDataSet.ValuePosition.OUTSIDE_SLICE
+
+        dataSet.valueTextSize = 12f
+        dataSet.valueTextColor = Color.WHITE
+
+        val data = PieData(dataSet)
+        data.setValueFormatter(object : com.github.mikephil.charting.formatter.ValueFormatter() {
+            override fun getFormattedValue(value: Float): String {
+                // Se o valor for muito pequeno (1), você também pode optar por esconder o número
+                // retornando "" aqui também, se quiser um visual super limpo.
+                // Por enquanto, deixei mostrando o número.
+                return value.toInt().toString()
+            }
+        })
+
+        binding.pieChartProfile.data = data
+        binding.pieChartProfile.centerText = "Total\n$total"
+        binding.pieChartProfile.setCenterTextSize(14f)
+        binding.pieChartProfile.setCenterTextColor(ContextCompat.getColor(requireContext(), R.color.black)) // Cuidado: R.color.black precisa existir ou use Color.BLACK
+
+        // Desabilitar a legenda (os quadradinhos coloridos embaixo) ajuda a limpar também
+        binding.pieChartProfile.legend.isEnabled = false
+        binding.pieChartProfile.description.isEnabled = false
+
+        binding.pieChartProfile.animateY(1400, Easing.EaseInOutQuad)
+        binding.pieChartProfile.invalidate()
+    }
     private fun showTimePickerDialog() {
         val current = viewModel.draftTime.value ?: Pair(20, 0)
         TimePickerDialog(
