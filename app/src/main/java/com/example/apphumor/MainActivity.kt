@@ -11,6 +11,7 @@ import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen // Importação Crucial
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.example.apphumor.databinding.ActivityMainBinding
@@ -28,68 +29,76 @@ class MainActivity : AppCompatActivity(), ProfileFragment.LogoutListener {
     private val handler = Handler(Looper.getMainLooper())
     private var isConnected = false
 
-    // Lançador de permissão para Notificações (Android 13+)
+    // Variável para controlar se o app está pronto para exibir a UI
+    private var isReady = false
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            // 1. Usuário aceitou
             android.util.Log.d("PermissaoNotificacao", "Permissão CONCEDIDA pelo usuário.")
-            // Opcional: Se quiser dar um feedback visual sutil
-            // Toast.makeText(this, "Lembretes ativados!", Toast.LENGTH_SHORT).show()
         } else {
-            // 2. Usuário negou
             android.util.Log.w("PermissaoNotificacao", "Permissão NEGADA pelo usuário.")
-
-            // DICA DE UX (Pode implementar no futuro):
-            // Aqui seria o lugar ideal para mostrar um Dialog explicando:
-            // "O AppHumor precisa de notificações para te lembrar de registrar seu dia.
-            // Vá em Configurações para ativar."
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 1. Instala a Splash Screen (DEVE ser a primeira linha)
+        val splashScreen = installSplashScreen()
+
         super.onCreate(savedInstanceState)
+
+        // Inicializa Auth
+        auth = FirebaseAuth.getInstance()
+
+        // 2. Lógica de Roteamento (Opção B)
+        // Verificamos se tem usuário ANTES de carregar o layout pesado
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            // Se NÃO estiver logado, manda pro Login e mata a Main
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return // Para a execução aqui
+        }
+
+        // Se chegou aqui, o usuário está logado.
+        // Podemos liberar a Splash Screen imediatamente ou carregar algo.
+        // Como o Firebase User já está em memória, liberamos o app.
+        isReady = true
+
+        // 3. (Opcional) Segura a Splash até isReady ser true
+        splashScreen.setKeepOnScreenCondition {
+            !isReady
+        }
+
+        // Carrega a UI Normal da MainActivity
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         binding.root.layoutTransition = LayoutTransition()
-        auth = FirebaseAuth.getInstance()
 
         setupNavigation()
         setupConnectionMonitor()
         askNotificationPermission()
     }
 
+    // ... Restante do código (setupNavigation, askNotificationPermission, etc) mantém igual ...
+
     private fun setupNavigation() {
-        // Encontra o NavHostFragment que definimos no XML
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.fragmentContainerMain) as NavHostFragment
-
-        // Pega o controlador de navegação
         val navController = navHostFragment.navController
-
-        // Conecta a BottomNavigationView com o NavController
-        // A mágica acontece aqui: como os IDs do menu batem com o gráfico,
-        // ele navega automaticamente!
         binding.bottomNav.setupWithNavController(navController)
     }
 
     private fun askNotificationPermission() {
-        // Essa permissão só existe no Android 13 (API 33) ou superior
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = android.Manifest.permission.POST_NOTIFICATIONS
-
-            // Verifica se JÁ temos a permissão
             if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
                 android.util.Log.d("PermissaoNotificacao", "Permissão já garantida anteriormente.")
             } else {
-                // Se não temos, pedimos ao sistema
-                // O sistema decide se mostra o popup ou se o usuário já negou permanentemente
                 requestPermissionLauncher.launch(permission)
             }
-        } else {
-            android.util.Log.d("PermissaoNotificacao", "Android < 13: Permissão concedida automaticamente na instalação.")
         }
     }
 

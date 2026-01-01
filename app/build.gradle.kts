@@ -45,6 +45,8 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.core.splashscreen)
+
     implementation(libs.mpAndroidChart)
 
     implementation(libs.androidx.foundation)

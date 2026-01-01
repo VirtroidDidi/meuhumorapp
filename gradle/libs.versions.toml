@@ -1,4 +1,5 @@
 [versions]
+coreSplashscreen = "1.2.0"
 mpAndroidChart = "v3.1.0"
 archCoreTesting = "2.2.0"
 coroutinesTest = "1.8.1"
@@ -45,6 +46,7 @@ foundation = "1.10.0"
 uiGraphics = "1.10.0"
 
 [libraries]
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 mpAndroidChart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpAndroidChart" }
 androidx-arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archCoreTesting" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
