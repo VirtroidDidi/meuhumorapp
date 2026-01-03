@@ -21,6 +21,8 @@ import com.example.apphumor.viewmodel.HomeViewModel
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.google.android.material.snackbar.Snackbar
 import com.example.apphumor.utils.SwipeToDeleteCallback
+import android.content.res.ColorStateList
+import com.google.android.material.color.MaterialColors
 // Removido: import com.example.apphumor.viewmodel.HomeViewModelFactory (Não existe mais)
 
 class HistoryFragment : Fragment() {
@@ -120,10 +122,16 @@ class HistoryFragment : Fragment() {
             if (activeFilters.isNotEmpty()) {
                 binding.tvFilterStatus.isVisible = true
                 binding.tvFilterStatus.text = getString(R.string.filter_active_format, activeFilters.joinToString(", "))
-                binding.btnFilter.setIconTintResource(R.color.teal_700)
+
+                // CORREÇÃO: Usa a cor PRIMÁRIA do tema (Roxo no Light / Lilás no Dark)
+                val primaryColor = MaterialColors.getColor(binding.btnFilter, com.google.android.material.R.attr.colorPrimary)
+                binding.btnFilter.iconTint = ColorStateList.valueOf(primaryColor)
             } else {
                 binding.tvFilterStatus.isVisible = false
-                binding.btnFilter.setIconTintResource(R.color.black)
+
+                // CORREÇÃO: Usa a cor do TEXTO/ÍCONE padrão (Preto no Light / Branco no Dark)
+                val onSurfaceColor = MaterialColors.getColor(binding.btnFilter, com.google.android.material.R.attr.colorOnSurfaceVariant)
+                binding.btnFilter.iconTint = ColorStateList.valueOf(onSurfaceColor)
             }
         }
     }

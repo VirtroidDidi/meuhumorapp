@@ -19,6 +19,8 @@ import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.SaveState
 import com.google.android.material.snackbar.Snackbar // Import do Snackbar
 import kotlinx.coroutines.launch
+import com.google.android.material.color.MaterialColors
+
 
 class AddHumorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHumorBinding
@@ -179,14 +181,26 @@ class AddHumorActivity : AppCompatActivity() {
     }
 
     // Função auxiliar para mostrar Snackbar com estilo
+    // Função auxiliar para mostrar Snackbar com estilo e cores do tema
     private fun showSnackbar(message: String, isError: Boolean = false) {
         val snackbar = Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+
         if (isError) {
-            snackbar.setBackgroundTint(getColor(R.color.error_color)) // Usando a cor de erro definida
-            snackbar.setTextColor(getColor(R.color.white))
+            // Busca as cores semânticas de ERRO do tema atual
+            val colorError = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorError)
+            val colorOnError = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorOnError)
+
+            snackbar.setBackgroundTint(colorError)
+            snackbar.setTextColor(colorOnError)
         } else {
-            snackbar.setBackgroundTint(getColor(R.color.secondary_color))
-            snackbar.setTextColor(getColor(R.color.white))
+            // Busca as cores semânticas de SUCESSO/SECUNDÁRIA do tema atual
+            // Usamos 'colorSecondary' para substituir o antigo 'secondary_color'
+            // Dica: Se quiser mais destaque, troque 'colorSecondary' por 'colorPrimary'
+            val colorBackground = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorSecondary)
+            val colorText = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorOnSecondary)
+
+            snackbar.setBackgroundTint(colorBackground)
+            snackbar.setTextColor(colorText)
         }
         snackbar.show()
     }

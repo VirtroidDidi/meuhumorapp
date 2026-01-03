@@ -5,7 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import androidx.work.* // Import do WorkManager
+import androidx.work.*
+import com.example.apphumor.utils.ThemePreferences // Importante
 import com.example.apphumor.worker.NotificationWorker
 import com.google.firebase.database.FirebaseDatabase
 import java.util.concurrent.TimeUnit
@@ -14,8 +15,11 @@ class AppHumorApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
 
+        // 1. Aplica o tema salvo (Claro/Escuro) imediatamente
+        ThemePreferences.applyTheme(this)
+
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         createNotificationChannel()
         setupDailyWorker()
     }
@@ -35,17 +39,14 @@ class AppHumorApplication : Application() {
     }
 
     private fun setupDailyWorker() {
-        // Define restrições (ex: apenas se tiver bateria razoável)
         val constraints = Constraints.Builder()
             .setRequiresBatteryNotLow(true)
             .build()
 
-        // Configura para repetir a cada 24 horas
         val dailyWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
             .setConstraints(constraints)
             .build()
 
-        // Enfileira o trabalho (KEEP garante que não criamos duplicatas ao abrir o app)
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "DailyHumorReminder",
             ExistingPeriodicWorkPolicy.KEEP,
