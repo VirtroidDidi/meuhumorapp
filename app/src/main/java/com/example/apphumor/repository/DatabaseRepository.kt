@@ -1,17 +1,19 @@
 package com.example.apphumor.repository
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.User
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.tasks.await
 
-// Mudança: Construtor recebe o banco. "users" é definido a partir dele.
 class DatabaseRepository(private val database: FirebaseDatabase) {
 
     private val db = database.getReference("users")
@@ -22,22 +24,25 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
         data class Error(val exception: Exception) : Result<Nothing>()
     }
 
-    // --- LEITURA INTELIGENTE ---
-    fun getHumorNotesAsLiveData(userId: String): LiveData<List<HumorNote>> {
-        val liveData = MutableLiveData<List<HumorNote>>()
+    // --- LEITURA REATIVA COM FLOW (Clean Architecture) ---
+    // Substitui o antigo getHumorNotesAsLiveData removendo acoplamento com Android Lifecycle
+    fun getHumorNotesFlow(userId: String): Flow<List<HumorNote>> = callbackFlow {
+        val query = db.child(userId).child("notes")
 
-        db.child(userId).child("notes").addValueEventListener(object : ValueEventListener {
+        val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val notes = snapshot.children.mapNotNull { child ->
                     val rawNote = child.getValue(HumorNote::class.java)
 
                     rawNote?.let { note ->
+                        // Lógica de negócio preservada: Tratamento de sync status
                         val realSyncStatus = if (child.hasChild("isSynced")) {
                             note.isSynced
                         } else {
                             true
                         }
 
+                        // Lógica de negócio preservada: Tratamento de timestamp legado
                         var correctTimestamp = note.timestamp
                         if (correctTimestamp == 0L) {
                             val legacyTime = note.data?.get("time") as? Long
@@ -51,16 +56,27 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
                         )
                     }
                 }
-                liveData.postValue(notes.sortedByDescending { it.timestamp })
+
+                // Emite a lista ordenada (mais recente primeiro)
+                trySend(notes.sortedByDescending { it.timestamp })
             }
 
             override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Erro de leitura: ${error.message}")
-                liveData.postValue(emptyList())
+                Log.e(TAG, "Erro de leitura no Flow: ${error.message}")
+                // Opcional: fechar o canal com erro ou apenas logar
+                close(error.toException())
             }
-        })
-        return liveData
-    }
+        }
+
+        // Adiciona o listener ao Firebase
+        query.addValueEventListener(listener)
+
+        // CRÍTICO: Executado quando o coletor (ViewModel) para de observar
+        awaitClose {
+            Log.d(TAG, "Fechando Flow e removendo listener do Firebase")
+            query.removeEventListener(listener)
+        }
+    }.flowOn(Dispatchers.IO) // Garante execução fora da Main Thread
 
     // --- ESCRITA OFFLINE-FIRST ---
     suspend fun saveHumorNote(userId: String, note: HumorNote): Result<String> {
@@ -68,7 +84,6 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
             val noteRef = db.child(userId).child("notes").push()
             val newId = noteRef.key ?: throw Exception("Falha ao gerar chave.")
 
-            // Agora usamos .copy() obrigatoriamente pois é val
             val noteToSave = note.copy(id = newId, userId = userId, isSynced = false)
 
             noteRef.setValue(noteToSave).addOnSuccessListener {
@@ -150,7 +165,6 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
         }
     }
 
-
     suspend fun deleteHumorNote(userId: String, noteId: String): Result<Unit> {
         return try {
             db.child(userId).child("notes").child(noteId).removeValue().await()
@@ -160,19 +174,11 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
         }
     }
 
-    /**
-     * Restaura uma nota mantendo o MESMO ID e TIMESTAMP original.
-     * Fundamental para a funcionalidade de "Undo".
-     */
     suspend fun restoreHumorNote(userId: String, note: HumorNote): Result<Unit> {
         val noteId = note.id ?: return Result.Error(Exception("ID nulo na restauração"))
         return try {
-            // Forçamos o set no caminho específico do ID antigo
             val ref = db.child(userId).child("notes").child(noteId)
-
-            // Garantimos que isSynced seja true, pois estamos restaurando algo que o user "quer" ver
             val noteToRestore = note.copy(isSynced = true)
-
             ref.setValue(noteToRestore).await()
             Result.Success(Unit)
         } catch (e: Exception) {
