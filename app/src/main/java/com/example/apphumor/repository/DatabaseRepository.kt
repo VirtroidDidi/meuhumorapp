@@ -6,6 +6,7 @@ import com.example.apphumor.models.User
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -93,6 +94,17 @@ class DatabaseRepository(private val database: FirebaseDatabase) {
             Result.Success(newId)
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao salvar: ${e.message}")
+            Result.Error(e)
+        }
+    }
+    suspend fun incrementPerfectWeeks(userId: String): Result<Unit> {
+        return try {
+            val userRef = db.child(userId).child("semanasPerfeitas")
+            // Usa ServerValue.increment para garantir atomicidade no Firebase
+            userRef.setValue(ServerValue.increment(1)).await()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao incrementar semanas: ${e.message}")
             Result.Error(e)
         }
     }

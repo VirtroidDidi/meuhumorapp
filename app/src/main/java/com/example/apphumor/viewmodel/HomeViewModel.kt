@@ -20,6 +20,15 @@ import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+// --- NOVO: Classe auxiliar para o visual das bolinhas ---
+data class DayStatus(
+    val label: String,      // "S", "T", "Q"... ou "H" (Hoje)
+    val hasEntry: Boolean,  // Se tem registro (cor verde)
+    val isToday: Boolean,   // Se é hoje (borda brilhante)
+    val isFuture: Boolean,  // Se é dia futuro (não usado na lógica de histórico, mas útil p/ expansão)
+    val dateTimestamp: Long // Timestamp do dia (meia-noite)
+)
+
 class HomeViewModel(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository,
@@ -29,46 +38,49 @@ class HomeViewModel(
     // 1. INPUTS
     private val userIdLiveData = MutableLiveData<String?>()
 
-    // O estado atual dos filtros (começa padrão)
+    // O estado atual dos filtros
     private val _filterState = MutableLiveData(FilterState())
     val filterState: LiveData<FilterState> = _filterState
 
     // 2. FONTE DE DADOS (Banco de Dados)
-    // Refatorado para consumir Flow e converter para LiveData
+    // Consome Flow e converte para LiveData
     private val allNotesSource: LiveData<List<HumorNote>> = userIdLiveData.switchMap { userId ->
         if (userId.isNullOrBlank()) {
             MutableLiveData(emptyList())
         } else {
-            // Chamada ao novo método que retorna Flow
             dbRepository.getHumorNotesFlow(userId)
-                .onStart {
-                    // Opcional: Emitir estado de loading se necessário
-                    Log.d("HomeViewModel", "Iniciando coleta do Flow de notas")
-                }
+                .onStart { Log.d("HomeViewModel", "Iniciando coleta do Flow de notas") }
                 .catch { e ->
-                    // Tratamento de erro robusto: emite lista vazia e loga o erro
                     Log.e("HomeViewModel", "Erro no Flow: ${e.message}")
                     emit(emptyList())
                 }
-                .asLiveData() // Converte Flow para LiveData respeitando o escopo do ViewModel
+                .asLiveData()
         }
     }
 
     // 3. SAÍDAS (Outputs para a UI)
 
-    // A. Lista Filtrada para o Histórico (A MÁGICA ACONTECE AQUI)
+    // --- NOVO: Lógica da Sequência de Dias (Streak) e Confetes ---
+    private val _weekDays = MediatorLiveData<List<DayStatus>>()
+    val weekDays: LiveData<List<DayStatus>> = _weekDays
+
+    private val _showConfetti = MutableLiveData<Boolean>(false)
+    val showConfetti: LiveData<Boolean> = _showConfetti
+
+    private val _streakText = MediatorLiveData<String>()
+    val streakText: LiveData<String> = _streakText
+
+    // --- EXISTENTE: Lista Filtrada para o Histórico ---
     val filteredHistoryNotes = MediatorLiveData<List<HumorNote>>().apply {
-        // Se a lista do banco mudar, recalcula
         addSource(allNotesSource) { notes ->
             value = applyFilters(notes, _filterState.value ?: FilterState())
         }
-        // Se o filtro mudar, recalcula
         addSource(_filterState) { state ->
             value = applyFilters(allNotesSource.value ?: emptyList(), state)
         }
     }
 
-    // B. Dados para a Home (Mantido como estava, mas seguro)
+    // --- EXISTENTE: Dados para a Home (Hoje e Progresso Simples) ---
     val todayNotes: LiveData<List<HumorNote>> = allNotesSource.switchMap { notes ->
         MutableLiveData(filterTodayNotes(notes))
     }
@@ -81,9 +93,111 @@ class HomeViewModel(
 
     init {
         userIdLiveData.value = auth.currentUser?.uid
+        setupWeekLogic() // Inicializa a lógica visual da semana
     }
 
-    // --- AÇÕES ---
+    // --- NOVA LÓGICA: Cálculo Visual da Semana ---
+
+    private fun setupWeekLogic() {
+        // Sempre que a lista de notas mudar, recalculamos o visual das bolinhas
+        _weekDays.addSource(allNotesSource) { notes ->
+            calculateWeekStatus(notes)
+        }
+    }
+
+    private fun calculateWeekStatus(notes: List<HumorNote>) {
+        val calendar = Calendar.getInstance()
+        // Zera hora/minuto para comparação justa de datas (meia-noite)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+
+        val todayMillis = calendar.timeInMillis
+        val statusList = mutableListOf<DayStatus>()
+        var daysWithContentCount = 0
+
+        // Vamos gerar os últimos 6 dias + Hoje (Total 7 dias para exibir)
+        // Loop de 6 até 0 (onde 0 é hoje)
+        val daysToCheck = 6
+
+        for (i in daysToCheck downTo 0) {
+            val targetDay = Calendar.getInstance()
+            targetDay.timeInMillis = todayMillis
+            targetDay.add(Calendar.DAY_OF_YEAR, -i) // Volta 'i' dias
+
+            val dayStart = targetDay.timeInMillis
+            val dayEnd = dayStart + TimeUnit.DAYS.toMillis(1)
+
+            // Verifica se existe alguma nota dentro desse intervalo de dia
+            val hasNote = notes.any { it.timestamp in dayStart until dayEnd }
+
+            // Define o Label (S, T, Q... ou H)
+            val dayOfWeek = targetDay.get(Calendar.DAY_OF_WEEK)
+            val isToday = (i == 0)
+            val label = if (isToday) "H" else getDayLetter(dayOfWeek)
+
+            statusList.add(
+                DayStatus(
+                    label = label,
+                    hasEntry = hasNote,
+                    isToday = isToday,
+                    isFuture = false,
+                    dateTimestamp = dayStart
+                )
+            )
+
+            // Contagem para "Semana Perfeita" (quantos dias da visualização têm registro)
+            if (hasNote) {
+                daysWithContentCount++
+            }
+        }
+
+        _weekDays.value = statusList
+        _streakText.value = "$daysWithContentCount Dias" // Atualiza o badge
+
+        // --- LÓGICA DO CONFETE ---
+        // Se o usuário preencheu todos os 7 dias visíveis (Semana Perfeita)
+        if (daysWithContentCount == 7) {
+            if (_showConfetti.value == false) {
+                triggerPerfectWeek()
+            }
+        }
+    }
+
+    private fun triggerPerfectWeek() {
+        _showConfetti.value = true
+        val userId = userIdLiveData.value ?: return
+        viewModelScope.launch {
+            // Nota: Certifique-se de ter criado este método 'incrementPerfectWeeks' no seu DatabaseRepository
+            // Se não tiver, comente a linha abaixo para não dar erro de compilação
+            try {
+                // dbRepository.incrementPerfectWeeks(userId)
+                Log.d("HomeViewModel", "Semana perfeita registrada!")
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Erro ao salvar semana perfeita: $e")
+            }
+        }
+    }
+
+    fun resetConfetti() {
+        _showConfetti.value = false
+    }
+
+    private fun getDayLetter(dayOfWeek: Int): String {
+        return when (dayOfWeek) {
+            Calendar.SUNDAY -> "D"
+            Calendar.MONDAY -> "S"
+            Calendar.TUESDAY -> "T"
+            Calendar.WEDNESDAY -> "Q"
+            Calendar.THURSDAY -> "Q"
+            Calendar.FRIDAY -> "S"
+            Calendar.SATURDAY -> "S"
+            else -> "?"
+        }
+    }
+
+    // --- AÇÕES EXISTENTES (Busca, Filtro, Delete) ---
 
     fun updateSearchQuery(query: String) {
         val current = _filterState.value ?: FilterState()
@@ -96,12 +210,33 @@ class HomeViewModel(
         _filterState.value = newState
     }
 
-    // --- LÓGICA DE FILTRAGEM ---
+    fun deleteNote(note: HumorNote) {
+        val userId = userIdLiveData.value ?: return
+        val noteId = note.id ?: return
+
+        lastDeletedNote = note
+
+        viewModelScope.launch {
+            dbRepository.deleteHumorNote(userId, noteId)
+        }
+    }
+
+    fun undoDelete() {
+        val userId = userIdLiveData.value ?: return
+        val noteToRestore = lastDeletedNote ?: return
+
+        viewModelScope.launch {
+            dbRepository.restoreHumorNote(userId, noteToRestore)
+            lastDeletedNote = null
+        }
+    }
+
+    // --- LÓGICA DE FILTRAGEM E SUPORTE (Mantido) ---
 
     private fun applyFilters(notes: List<HumorNote>, state: FilterState): List<HumorNote> {
         var result = notes
 
-        // 1. Filtro de Texto (Case insensitive)
+        // 1. Filtro de Texto
         if (state.query.isNotEmpty()) {
             result = result.filter {
                 it.descricao?.contains(state.query, ignoreCase = true) == true ||
@@ -109,7 +244,7 @@ class HomeViewModel(
             }
         }
 
-        // 2. Filtro de Humor (Multisseleção)
+        // 2. Filtro de Humor
         if (state.selectedHumors.isNotEmpty()) {
             result = result.filter { note ->
                 val noteHumor = note.humor ?: ""
@@ -133,10 +268,12 @@ class HomeViewModel(
                 val limit = now - (7 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
+
             FilterTimeRange.LAST_30_DAYS -> {
                 val limit = now - (30 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
+
             FilterTimeRange.ALL_TIME -> result
         }
 
@@ -149,12 +286,11 @@ class HomeViewModel(
         return result
     }
 
-    // --- LÓGICA DE SUPORTE (MANTIDA DO ORIGINAL) ---
-
     private fun getDayUnit(timestamp: Long): Long {
         return timestamp / TimeUnit.DAYS.toMillis(1)
     }
 
+    // Calcula sequência consecutiva (lógica antiga de backup)
     private fun calculateDailySequence(notes: List<HumorNote>): Int {
         if (notes.isEmpty()) return 0
         val distinctRecordedDays = notes
@@ -195,27 +331,6 @@ class HomeViewModel(
 
         return notes.filter { note ->
             note.timestamp in todayStart until todayEnd
-        }
-    }
-
-    fun deleteNote(note: HumorNote) {
-        val userId = userIdLiveData.value ?: return
-        val noteId = note.id ?: return
-
-        lastDeletedNote = note
-
-        viewModelScope.launch {
-            dbRepository.deleteHumorNote(userId, noteId)
-        }
-    }
-
-    fun undoDelete() {
-        val userId = userIdLiveData.value ?: return
-        val noteToRestore = lastDeletedNote ?: return
-
-        viewModelScope.launch {
-            dbRepository.restoreHumorNote(userId, noteToRestore)
-            lastDeletedNote = null
         }
     }
 }

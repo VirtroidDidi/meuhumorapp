@@ -1,24 +1,32 @@
 package com.example.apphumor
 
+import android.animation.Animator
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.Log
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.airbnb.lottie.LottieAnimationView
 import com.example.apphumor.adapter.HumorNoteAdapter
 import com.example.apphumor.databinding.FragmentHomeBinding
 import com.example.apphumor.di.DependencyProvider
-import com.example.apphumor.utils.SwipeToDeleteCallback // Import da nossa nova classe
+import com.example.apphumor.utils.SwipeToDeleteCallback
 import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.HomeViewModel
 import com.google.android.material.snackbar.Snackbar
-
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -70,23 +78,16 @@ class HomeFragment : Fragment() {
             adapter = this@HomeFragment.adapter
         }
 
-        // Chamada limpa e corrigida!
         setupSwipeToDelete()
     }
 
     private fun setupSwipeToDelete() {
-        // Usamos a classe utilitária para limpar o código e corrigir os imports de gráficos
         val swipeHandler = SwipeToDeleteCallback(requireContext()) { position ->
             val currentList = adapter.currentList
 
-            // Verificação de segurança
             if (position >= 0 && position < currentList.size) {
                 val noteToDelete = currentList[position]
-
-                // 1. Lógica de negócio (ViewModel)
                 viewModel.deleteNote(noteToDelete)
-
-                // 2. Feedback Visual
                 showUndoSnackbar()
             }
         }
@@ -118,6 +119,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupObservers() {
+        // 1. Observa lista de notas de HOJE
         viewModel.todayNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
                 binding.recyclerViewNotes.visibility = View.VISIBLE
@@ -129,32 +131,117 @@ class HomeFragment : Fragment() {
             }
         }
 
-        viewModel.dailyProgress.observe(viewLifecycleOwner) { (sequence, lastRecordedTimestamp) ->
-            updateProgressCard(sequence, lastRecordedTimestamp)
-        }
-    }
+        // --- NOVA LÓGICA DO CARD DE SEQUÊNCIA (STREAK) ---
 
-    private fun updateProgressCard(sequence: Int, lastRecordedTimestamp: Long?) {
-        binding.progressCard.tvSequenceDays.text = sequence.toString()
-        binding.progressCard.progressBar.progress = sequence
-
-        val maxDays = binding.progressCard.progressBar.max
-
-        var descriptionText = when {
-            sequence >= maxDays -> getString(R.string.sequence_congrats)
-            sequence > 0 -> getString(R.string.sequence_days, sequence)
-            else -> getString(R.string.sequence_default)
+        // 2. Observa o Texto do Badge ("5 Dias")
+        viewModel.streakText.observe(viewLifecycleOwner) { text ->
+            // Atenção: Certifique-se que o ID 'tv_streak_count' existe no seu layout 'item_sequence_card.xml'
+            val badgeText = binding.progressCard.root.findViewById<TextView>(R.id.tv_streak_count)
+            badgeText?.text = text
         }
 
-        if (sequence == 0 && lastRecordedTimestamp != null) {
-            descriptionText = getString(R.string.sequence_reset)
+        // 3. Observa a animação de Confetes
+        viewModel.showConfetti.observe(viewLifecycleOwner) { show ->
+            if (show) {
+                val lottie = binding.progressCard.root.findViewById<LottieAnimationView>(R.id.lottieConfetti)
+                lottie?.let { animation ->
+                    animation.visibility = View.VISIBLE
+                    animation.playAnimation()
+
+                    animation.addAnimatorListener(object : Animator.AnimatorListener {
+                        override fun onAnimationEnd(animation: Animator) {
+                            lottie.visibility = View.GONE
+                            viewModel.resetConfetti()
+                        }
+                        override fun onAnimationStart(animation: Animator) {}
+                        override fun onAnimationCancel(animation: Animator) {}
+                        override fun onAnimationRepeat(animation: Animator) {}
+                    })
+                }
+            }
         }
-        binding.progressCard.tvSequenceDescription.text = descriptionText
+
+        // 4. Renderiza as Bolinhas (Dias da Semana)
+        viewModel.weekDays.observe(viewLifecycleOwner) { days ->
+            val container = binding.progressCard.root.findViewById<LinearLayout>(R.id.ll_days_container)
+            if (container == null) return@observe // Segurança caso o ID não exista ainda
+
+            container.removeAllViews()
+            val context = requireContext()
+
+            // Dimensões
+            val size = 32.dpToPx(context)
+            val margin = 4.dpToPx(context)
+
+            days.forEach { day ->
+                // Layout Vertical para cada dia (Bolinha + Letra)
+                val itemLayout = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                // A Bolinha (Visual)
+                val circleView = ImageView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                        bottomMargin = margin
+                    }
+
+                    if (day.hasEntry) {
+                        // Dia Completo (Verde com Check)
+                        // Certifique-se de ter criado o drawable 'bg_day_filled.xml'
+                        setBackgroundResource(R.drawable.bg_day_filled)
+                        // Use um ícone padrão do Android ou seu próprio
+                        setImageResource(R.drawable.ic_check_24)
+                        setColorFilter(ContextCompat.getColor(context, android.R.color.white))
+                        scaleType = ImageView.ScaleType.CENTER_INSIDE
+                        setPadding(10, 10, 10, 10) // Padding interno para o ícone não ficar gigante
+                    } else {
+                        // Dia Vazio
+                        if (day.isToday) {
+                            // Hoje mas vazio (Destaque/Borda)
+                            setBackgroundResource(R.drawable.bg_day_today_highlight)
+                        } else {
+                            // Passado/Futuro vazio
+                            setBackgroundResource(R.drawable.bg_day_empty)
+                        }
+                    }
+
+                    if (day.isToday) {
+                        elevation = 8f
+                    }
+                }
+
+                // O Texto (S, T, Q... H)
+                val labelView = TextView(context).apply {
+                    text = day.label
+                    textSize = 12f
+                    gravity = Gravity.CENTER
+
+                    // Se for hoje, cor primária e negrito
+                    if (day.isToday) {
+                        setTextColor(ContextCompat.getColor(context, R.color.md_theme_light_primary))
+                        setTypeface(null, Typeface.BOLD)
+                    } else {
+                        setTextColor(ContextCompat.getColor(context, R.color.md_theme_dark_onSurface))
+                    }
+                }
+
+                itemLayout.addView(circleView)
+                itemLayout.addView(labelView)
+                container.addView(itemLayout)
+            }
+        }
     }
 
     private fun showEmptyState() {
         binding.recyclerViewNotes.visibility = View.GONE
         binding.emptyState.visibility = View.VISIBLE
+    }
+
+    // Função utilitária para conversão de DP
+    private fun Int.dpToPx(context: Context): Int {
+        return (this * context.resources.displayMetrics.density).toInt()
     }
 
     override fun onDestroyView() {

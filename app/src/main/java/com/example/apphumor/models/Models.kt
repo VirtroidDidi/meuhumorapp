@@ -28,5 +28,16 @@ data class User(
     val idade: Int? = null,
     val notificacaoAtiva: Boolean = true,
     val horarioNotificacao: String = "20:00",
-    val fotoBase64: String? = null
-)
+    val fotoBase64: String? = null,
+    val semanasPerfeitas: Int = 0
+) {
+
+    fun getTituloNivel(): String {
+        return when {
+            semanasPerfeitas >= 12 -> "Guru do Humor 🧘‍♂️"
+            semanasPerfeitas >= 4 -> "Mestre da Constância 🏆"
+            semanasPerfeitas >= 1 -> "Iniciante Consciente 🌱"
+            else -> "Começando a Jornada 🚀"
+        }
+    }
+}
