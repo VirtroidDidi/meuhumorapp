@@ -216,8 +216,7 @@ class ProfileFragment : Fragment() {
         binding.tvSelectedTimePerfil.isEnabled = editing && isNotifOn
         binding.llHorarioContainerPerfil.alpha = if (editing && isNotifOn) 1.0f else 0.5f
 
-        // 4. Seletor de Tema (CORRIGIDO: Agora segue a regra do resto)
-        // Antes estava !editing (invertido). Agora é editing.
+        // 4. Seletor de Tema
         binding.llThemeSelector.isEnabled = editing
         binding.llThemeSelector.alpha = if (editing) 1.0f else 0.5f
 
@@ -245,26 +244,30 @@ class ProfileFragment : Fragment() {
                 binding.etUserName.setText(it.nome)
                 binding.etUserIdade.setText(it.idade.toString())
                 binding.tvWelcomeMessage.text = it.nome ?: "Usuário"
+
+                // --- NOVO: ATUALIZA O CARD DE CONQUISTAS ---
+                // Preenche o Título do Nível
+                binding.tvLevelTitle.text = it.getTituloNivel()
+
+                // Preenche o Contador de Semanas
+                val weeks = it.semanasPerfeitas
+                val weeksText = if (weeks == 1) "1 Semana Perfeita" else "$weeks Semanas Perfeitas"
+                binding.chipWeeksCount.text = weeksText
             }
         }
 
-        // 2. Foto de Perfil (COM A CORREÇÃO DE COR)
+        // 2. Foto de Perfil
         viewModel.draftPhotoBase64.observe(viewLifecycleOwner) { base64 ->
             if (base64 != null) {
                 // CASO 1: Tem foto real
                 val bitmap = ImageUtils.base64ToBitmap(base64)
                 binding.ivProfileAvatar.setImageBitmap(bitmap)
                 binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                // --- CORREÇÃO CRUCIAL ---
-                // Remove qualquer filtro de cor ou tint que existia antes
                 binding.ivProfileAvatar.clearColorFilter()
                 binding.ivProfileAvatar.imageTintList = null
-                // -----------------------
             } else {
                 // CASO 2: Sem foto (Bonequinho padrão)
                 binding.ivProfileAvatar.setImageResource(R.drawable.ic_usuario_24)
-                // Aplica a cor do tema (Roxo/Lilás) no bonequinho
                 val primaryColor = MaterialColors.getColor(binding.ivProfileAvatar, com.google.android.material.R.attr.colorPrimary)
                 binding.ivProfileAvatar.setColorFilter(primaryColor)
                 binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_INSIDE
@@ -361,8 +364,10 @@ class ProfileFragment : Fragment() {
         val entries = ArrayList<PieEntry>()
         val colors = ArrayList<Int>()
         var total = 0
+
         stats.forEach { stat ->
             total += stat.count
+            // Só mostra o texto se tiver espaço (count >= 3)
             val labelText = if (stat.count < 3) "" else requireContext().getString(stat.labelRes)
             entries.add(PieEntry(stat.count.toFloat(), labelText))
             colors.add(ContextCompat.getColor(requireContext(), stat.colorRes))
@@ -383,8 +388,16 @@ class ProfileFragment : Fragment() {
         binding.pieChartProfile.data = data
         binding.pieChartProfile.centerText = "Total\n$total"
         binding.pieChartProfile.setCenterTextSize(14f)
-        val dynamicColor = MaterialColors.getColor(binding.pieChartProfile, com.google.android.material.R.attr.colorOnSurface)
+
+        // --- CORREÇÃO AQUI (Forma Nativa do Android) ---
+        val typedValue = android.util.TypedValue()
+        // Busca a cor "OnSurface" (cor do texto padrão) do tema atual
+        requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+        val dynamicColor = typedValue.data
+
         binding.pieChartProfile.setCenterTextColor(dynamicColor)
+        // ------------------------------------------------
+
         binding.pieChartProfile.legend.isEnabled = false
         binding.pieChartProfile.description.isEnabled = false
         binding.pieChartProfile.animateY(1400, Easing.EaseInOutQuad)

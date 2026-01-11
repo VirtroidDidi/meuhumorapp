@@ -20,12 +20,12 @@ import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 
-// --- NOVO: Classe auxiliar para o visual das bolinhas ---
+// --- Classe auxiliar para o visual das bolinhas ---
 data class DayStatus(
     val label: String,      // "S", "T", "Q"... ou "H" (Hoje)
     val hasEntry: Boolean,  // Se tem registro (cor verde)
     val isToday: Boolean,   // Se é hoje (borda brilhante)
-    val isFuture: Boolean,  // Se é dia futuro (não usado na lógica de histórico, mas útil p/ expansão)
+    val isFuture: Boolean,  // Se é dia futuro
     val dateTimestamp: Long // Timestamp do dia (meia-noite)
 )
 
@@ -43,7 +43,6 @@ class HomeViewModel(
     val filterState: LiveData<FilterState> = _filterState
 
     // 2. FONTE DE DADOS (Banco de Dados)
-    // Consome Flow e converte para LiveData
     private val allNotesSource: LiveData<List<HumorNote>> = userIdLiveData.switchMap { userId ->
         if (userId.isNullOrBlank()) {
             MutableLiveData(emptyList())
@@ -60,7 +59,7 @@ class HomeViewModel(
 
     // 3. SAÍDAS (Outputs para a UI)
 
-    // --- NOVO: Lógica da Sequência de Dias (Streak) e Confetes ---
+    // --- Lógica da Sequência de Dias (Streak) e Confetes ---
     private val _weekDays = MediatorLiveData<List<DayStatus>>()
     val weekDays: LiveData<List<DayStatus>> = _weekDays
 
@@ -70,7 +69,7 @@ class HomeViewModel(
     private val _streakText = MediatorLiveData<String>()
     val streakText: LiveData<String> = _streakText
 
-    // --- EXISTENTE: Lista Filtrada para o Histórico ---
+    // --- Lista Filtrada para o Histórico ---
     val filteredHistoryNotes = MediatorLiveData<List<HumorNote>>().apply {
         addSource(allNotesSource) { notes ->
             value = applyFilters(notes, _filterState.value ?: FilterState())
@@ -80,7 +79,7 @@ class HomeViewModel(
         }
     }
 
-    // --- EXISTENTE: Dados para a Home (Hoje e Progresso Simples) ---
+    // --- Dados para a Home (Hoje e Progresso Simples) ---
     val todayNotes: LiveData<List<HumorNote>> = allNotesSource.switchMap { notes ->
         MutableLiveData(filterTodayNotes(notes))
     }
@@ -118,7 +117,6 @@ class HomeViewModel(
         var daysWithContentCount = 0
 
         // Vamos gerar os últimos 6 dias + Hoje (Total 7 dias para exibir)
-        // Loop de 6 até 0 (onde 0 é hoje)
         val daysToCheck = 6
 
         for (i in daysToCheck downTo 0) {
@@ -159,6 +157,7 @@ class HomeViewModel(
         // --- LÓGICA DO CONFETE ---
         // Se o usuário preencheu todos os 7 dias visíveis (Semana Perfeita)
         if (daysWithContentCount == 7) {
+            // Só dispara se ainda não disparou nesta sessão
             if (_showConfetti.value == false) {
                 triggerPerfectWeek()
             }
@@ -169,11 +168,10 @@ class HomeViewModel(
         _showConfetti.value = true
         val userId = userIdLiveData.value ?: return
         viewModelScope.launch {
-            // Nota: Certifique-se de ter criado este método 'incrementPerfectWeeks' no seu DatabaseRepository
-            // Se não tiver, comente a linha abaixo para não dar erro de compilação
             try {
-                // dbRepository.incrementPerfectWeeks(userId)
-                Log.d("HomeViewModel", "Semana perfeita registrada!")
+                // ATENÇÃO: Incrementa o contador no Firebase
+                dbRepository.incrementPerfectWeeks(userId)
+                Log.d("HomeViewModel", "Semana perfeita registrada e salva!")
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Erro ao salvar semana perfeita: $e")
             }
@@ -231,12 +229,11 @@ class HomeViewModel(
         }
     }
 
-    // --- LÓGICA DE FILTRAGEM E SUPORTE (Mantido) ---
+    // --- LÓGICA DE FILTRAGEM E SUPORTE ---
 
     private fun applyFilters(notes: List<HumorNote>, state: FilterState): List<HumorNote> {
         var result = notes
 
-        // 1. Filtro de Texto
         if (state.query.isNotEmpty()) {
             result = result.filter {
                 it.descricao?.contains(state.query, ignoreCase = true) == true ||
@@ -244,7 +241,6 @@ class HomeViewModel(
             }
         }
 
-        // 2. Filtro de Humor
         if (state.selectedHumors.isNotEmpty()) {
             result = result.filter { note ->
                 val noteHumor = note.humor ?: ""
@@ -254,12 +250,10 @@ class HomeViewModel(
             }
         }
 
-        // 3. Filtro de Conteúdo
         if (state.onlyWithNotes) {
             result = result.filter { !it.descricao.isNullOrEmpty() }
         }
 
-        // 4. Filtro de Tempo
         val now = System.currentTimeMillis()
         val oneDay = TimeUnit.DAYS.toMillis(1)
 
@@ -268,16 +262,13 @@ class HomeViewModel(
                 val limit = now - (7 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
-
             FilterTimeRange.LAST_30_DAYS -> {
                 val limit = now - (30 * oneDay)
                 result.filter { it.timestamp >= limit }
             }
-
             FilterTimeRange.ALL_TIME -> result
         }
 
-        // 5. Ordenação
         result = when (state.sortOrder) {
             SortOrder.NEWEST -> result.sortedByDescending { it.timestamp }
             SortOrder.OLDEST -> result.sortedBy { it.timestamp }
@@ -290,7 +281,6 @@ class HomeViewModel(
         return timestamp / TimeUnit.DAYS.toMillis(1)
     }
 
-    // Calcula sequência consecutiva (lógica antiga de backup)
     private fun calculateDailySequence(notes: List<HumorNote>): Int {
         if (notes.isEmpty()) return 0
         val distinctRecordedDays = notes
