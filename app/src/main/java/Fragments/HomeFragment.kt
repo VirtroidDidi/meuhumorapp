@@ -71,8 +71,9 @@ class HomeFragment : Fragment() {
     }
 
     // --- NOVA FUNÇÃO: Configura Saudação e Avatar ---
+    // Substitua a função setupHeader antiga por esta versão com Cache
     private fun setupHeader() {
-        // 1. Saudação (Bom dia/tarde/noite)
+        // 1. Saudação
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val greeting = when (hour) {
@@ -82,36 +83,56 @@ class HomeFragment : Fragment() {
         }
         binding.tvGreeting.text = greeting
 
-        // 2. Dados do Usuário (Nome e Foto)
+        // --- INÍCIO DO CACHE (A Mágica acontece aqui) ---
+        val prefs = requireContext().getSharedPreferences("user_cache", Context.MODE_PRIVATE)
+        val cachedName = prefs.getString("cached_name", null)
+        val cachedPhoto = prefs.getString("cached_photo", null)
+
+        // A. Se tiver dados salvos, MOSTRA AGORA (não espera a internet)
+        if (cachedName != null) {
+            binding.tvUserName.text = "$cachedName!"
+        }
+
+        if (cachedPhoto != null) {
+            try {
+                val imageBytes = Base64.decode(cachedPhoto, Base64.DEFAULT)
+                val decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                binding.ivUserAvatar.setImageBitmap(decodedImage)
+            } catch (e: Exception) {
+                // Se der erro no cache, deixa o placeholder quieto
+            }
+        }
+        // --- FIM DO CACHE ---
+
+        // 2. Observa o Firebase (Quando a internet responder, atualiza e salva de novo)
         viewModel.currentUser.observe(viewLifecycleOwner) { user ->
             user?.let {
                 val firstName = it.nome?.split(" ")?.firstOrNull() ?: "Visitante"
                 binding.tvUserName.text = "$firstName!"
+
+                // Salva o nome novo no cache
+                prefs.edit().putString("cached_name", firstName).apply()
 
                 if (!it.fotoBase64.isNullOrEmpty()) {
                     try {
                         val imageBytes = Base64.decode(it.fotoBase64, Base64.DEFAULT)
                         val decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                         binding.ivUserAvatar.setImageBitmap(decodedImage)
+
+                        // Salva a foto nova no cache
+                        prefs.edit().putString("cached_photo", it.fotoBase64).apply()
+
                     } catch (e: Exception) {
                         Log.e(TAG, "Erro ao decodificar avatar: ${e.message}")
-                        binding.ivUserAvatar.setImageResource(R.drawable.ic_mood_neutral_anim)
                     }
-                } else {
-                    binding.ivUserAvatar.setImageResource(R.drawable.ic_mood_neutral_anim)
                 }
             }
         }
 
-        // 3. AÇÃO DE CLIQUE (CORRIGIDA COM SEU ID REAL)
+        // 3. Clique no Avatar
         binding.ivUserAvatar.setOnClickListener {
-            // Busca a barra pelo ID correto que vi no seu XML: 'bottomNav'
             val bottomNav = requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNav)
-
             if (bottomNav != null) {
-                // Simula o clique no botão de Perfil
-                // IMPORTANTE: Se 'navigation_profile' ficar vermelho, abra o arquivo 'res/menu/bottom_nav_menu.xml'
-                // e veja qual é o ID do item de perfil (pode ser id_profile, navigation_user, etc)
                 bottomNav.selectedItemId = R.id.nav_profile
             } else {
                 Log.e(TAG, "Barra de navegação não encontrada!")
