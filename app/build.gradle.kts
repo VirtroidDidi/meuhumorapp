@@ -45,6 +45,9 @@ android {
 
 dependencies {
 
+    implementation(libs.coil)
+    implementation(libs.coil.gif)
+
     implementation(libs.lottie)
 
     implementation(libs.androidx.lifecycle.livedata.ktx)

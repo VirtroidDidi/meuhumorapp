@@ -1,14 +1,18 @@
 package com.example.apphumor.adapter
 
-import android.content.res.ColorStateList
+import android.os.Build.VERSION.SDK_INT
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import coil.ImageLoader
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
+import coil.load
+import coil.request.repeatCount
 import com.example.apphumor.R
 import com.example.apphumor.databinding.ItemNoteBinding
 import com.example.apphumor.models.HumorNote
@@ -18,32 +22,79 @@ import java.util.*
 
 class HumorNoteAdapter(
     private val showEditButton: Boolean = true,
-    private val showSyncStatus: Boolean = true, // NOVO PARÂMETRO COM PADRÃO TRUE (Home não quebra)
+    private val showSyncStatus: Boolean = true,
     private val onEditClick: ((HumorNote) -> Unit)? = null
 ) : ListAdapter<HumorNote, HumorNoteAdapter.HumorNoteViewHolder>(HumorNoteDiffCallback()) {
+
+    // ID da nota que deve ser animada. Se não for null, essa nota vai girar.
+    private var animateTargetId: String? = null
+
+    // Função chamada pelo Fragment para definir quem vai brilhar
+    fun triggerAnimation(noteId: String) {
+        animateTargetId = noteId
+        // Atualiza a lista para aplicar a mudança visual
+        notifyDataSetChanged()
+    }
 
     inner class HumorNoteViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(note: HumorNote) {
             val context = binding.root.context
+            val moodStyle = HumorUtils.getMoodStyle(note.humor)
 
             with(binding) {
-                // 1. Botão Editar
-                btnEdit.visibility = if (showEditButton) View.VISIBLE else View.GONE
+                // --- LÓGICA VISUAL PRINCIPAL ---
 
-                // 2. Configuração Visual (Ícone e Cor do Humor)
-                val moodStyle = HumorUtils.getMoodStyle(note.humor)
-                ivHumorIcon.setImageResource(moodStyle.iconRes)
-                val color = ContextCompat.getColor(context, moodStyle.contentColorRes)
-                ImageViewCompat.setImageTintList(ivHumorIcon, ColorStateList.valueOf(color))
+                // Verifica: Esta é a nota que acabou de ser criada/editada?
+                if (note.id == animateTargetId) {
+                    // [MODO ANIMAÇÃO]
+                    // 1. Limpa qualquer filtro de cor para o GIF aparecer bonito
+                    ivHumorIcon.clearColorFilter()
+                    ImageViewCompat.setImageTintList(ivHumorIcon, null)
+
+                    // 2. Prepara o Loader de GIF
+                    val imageLoader = ImageLoader.Builder(context)
+                        .components {
+                            if (SDK_INT >= 28) {
+                                add(ImageDecoderDecoder.Factory())
+                            } else {
+                                add(GifDecoder.Factory())
+                            }
+                        }
+                        .build()
+
+                    // 3. Carrega o GIF Animado
+                    val animRes = getMoodAnimResource(note.humor ?: "NEUTRAL")
+                    ivHumorIcon.load(animRes, imageLoader) {
+                        crossfade(true)
+                        repeatCount(0) // Toca 1 vez + 1 repetição (2 ciclos) e para
+
+                        // Se o GIF falhar, coloca o estático como segurança
+                        error(moodStyle.iconRes)
+                    }
+
+                    // IMPORTANTE: Não limpamos o animateTargetId aqui.
+                    // Deixamos ele ativo para garantir que a animação não seja cortada
+                    // se a lista atualizar sozinha.
+
+                } else {
+                    // [MODO ESTÁTICO PADRÃO]
+                    // Carrega a imagem estática (SVG/PNG) imediatamente
+                    ivHumorIcon.load(moodStyle.iconRes) {
+                        // Garante que não use o decoder de GIF aqui para economizar memória
+                    }
+                    ivHumorIcon.clearColorFilter()
+                    ImageViewCompat.setImageTintList(ivHumorIcon, null)
+                }
+
+                // --- Restante dos dados (Texto, Data, etc) ---
+                btnEdit.visibility = if (showEditButton) View.VISIBLE else View.GONE
                 tvHumor.text = context.getString(moodStyle.labelRes)
 
-                // 3. Descrição
                 tvDescricao.text = note.descricao.takeIf { !it.isNullOrEmpty() } ?: "Sem descrição"
                 tvDescricao.visibility = if (note.descricao.isNullOrEmpty()) View.GONE else View.VISIBLE
 
-                // 4. Data
                 val timestamp = note.timestamp
                 if (timestamp > 0) {
                     try {
@@ -56,31 +107,44 @@ class HumorNoteAdapter(
                     tvData.text = ""
                 }
 
-                // 5. Listener de Edição
+                // Configuração do clique manual (Sempre permite animar ao clicar)
+                ivHumorIcon.setOnClickListener {
+                    // Ao clicar, forçamos a animação pontual deste item
+                    triggerAnimation(note.id ?: "")
+                }
+
                 if (showEditButton && onEditClick != null) {
                     btnEdit.setOnClickListener { onEditClick.invoke(note) }
                 } else {
                     btnEdit.setOnClickListener(null)
                 }
 
-                // 6. Status de Sincronização (WhatsApp Style)
-                // LÓGICA ALTERADA: Verifica primeiro se deve mostrar o status
                 if (showSyncStatus) {
                     ivSyncStatus.visibility = View.VISIBLE
-
                     if (note.isSynced) {
-                        // TRUE = Já foi para a nuvem -> Check Duplo Azul
                         ivSyncStatus.setImageResource(R.drawable.ic_status_synced)
-                        ivSyncStatus.contentDescription = "Sincronizado na nuvem"
                     } else {
-                        // FALSE = Ainda está só no cache -> Check Simples Cinza
                         ivSyncStatus.setImageResource(R.drawable.ic_status_pending)
-                        ivSyncStatus.contentDescription = "Salvo no dispositivo"
                     }
                 } else {
-                    // Se estiver no histórico, escondemos o ícone completamente
                     ivSyncStatus.visibility = View.GONE
                 }
+            }
+        }
+
+        private fun getMoodAnimResource(mood: String): Int {
+            return when (mood.uppercase()) {
+                "RAD" -> R.drawable.ic_mood_rad_anim
+                "HAPPY" -> R.drawable.ic_mood_happy_anim
+                "GRATEFUL" -> R.drawable.ic_mood_grateful_anim
+                "CALM" -> R.drawable.ic_mood_calm_anim
+                "NEUTRAL" -> R.drawable.ic_mood_neutral_anim
+                "PENSIVE" -> R.drawable.ic_mood_pensive_anim
+                "ANXIOUS" -> R.drawable.ic_mood_anxious_anim
+                "SAD" -> R.drawable.ic_mood_sad_anim
+                "ANGRY" -> R.drawable.ic_mood_angry_anim
+                "TIRED" -> R.drawable.ic_mood_tired_anim
+                else -> R.drawable.ic_mood_neutral_anim
             }
         }
     }
@@ -102,7 +166,6 @@ class HumorNoteAdapter(
         override fun areItemsTheSame(oldItem: HumorNote, newItem: HumorNote): Boolean {
             return oldItem.id == newItem.id
         }
-
         override fun areContentsTheSame(oldItem: HumorNote, newItem: HumorNote): Boolean {
             return oldItem == newItem
         }
