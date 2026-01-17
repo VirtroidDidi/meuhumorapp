@@ -72,7 +72,7 @@ class HomeFragment : Fragment() {
 
     // --- NOVA FUNÇÃO: Configura Saudação e Avatar ---
     private fun setupHeader() {
-        // 1. Define a saudação baseada na hora
+        // 1. Saudação (Bom dia/tarde/noite)
         val calendar = Calendar.getInstance()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val greeting = when (hour) {
@@ -82,14 +82,12 @@ class HomeFragment : Fragment() {
         }
         binding.tvGreeting.text = greeting
 
-        // 2. Observa os dados do usuário para preencher Nome e Foto
+        // 2. Dados do Usuário (Nome e Foto)
         viewModel.currentUser.observe(viewLifecycleOwner) { user ->
             user?.let {
-                // Nome (Pega só o primeiro nome)
                 val firstName = it.nome?.split(" ")?.firstOrNull() ?: "Visitante"
                 binding.tvUserName.text = "$firstName!"
 
-                // Foto (Decodifica Base64)
                 if (!it.fotoBase64.isNullOrEmpty()) {
                     try {
                         val imageBytes = Base64.decode(it.fotoBase64, Base64.DEFAULT)
@@ -105,8 +103,20 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // 3. Clique no Avatar (Opcional: Leva ao Perfil se você tiver a navegação configurada)
-        // binding.ivUserAvatar.setOnClickListener { ... }
+        // 3. AÇÃO DE CLIQUE (CORRIGIDA COM SEU ID REAL)
+        binding.ivUserAvatar.setOnClickListener {
+            // Busca a barra pelo ID correto que vi no seu XML: 'bottomNav'
+            val bottomNav = requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottomNav)
+
+            if (bottomNav != null) {
+                // Simula o clique no botão de Perfil
+                // IMPORTANTE: Se 'navigation_profile' ficar vermelho, abra o arquivo 'res/menu/bottom_nav_menu.xml'
+                // e veja qual é o ID do item de perfil (pode ser id_profile, navigation_user, etc)
+                bottomNav.selectedItemId = R.id.nav_profile
+            } else {
+                Log.e(TAG, "Barra de navegação não encontrada!")
+            }
+        }
     }
 
     private fun setupRecyclerView() {

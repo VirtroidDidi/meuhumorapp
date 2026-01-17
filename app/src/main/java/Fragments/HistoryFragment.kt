@@ -134,6 +134,11 @@ class HistoryFragment : Fragment() {
                 binding.btnFilter.iconTint = ColorStateList.valueOf(onSurfaceColor)
             }
         }
+        viewModel.totalNotesCount.observe(viewLifecycleOwner) { count ->
+            val text = "Você já registrou <b>$count momentos</b>."
+            // Html.fromHtml faz o <b></b> virar negrito real
+            binding.tvHistoryStats.text = android.text.Html.fromHtml(text, android.text.Html.FROM_HTML_MODE_COMPACT)
+        }
     }
     private fun setupSwipeToDelete() {
         val swipeHandler = SwipeToDeleteCallback(requireContext()) { position ->

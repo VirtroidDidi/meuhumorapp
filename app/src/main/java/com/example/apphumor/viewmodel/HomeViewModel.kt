@@ -6,6 +6,7 @@ import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
+import androidx.lifecycle.map
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.FilterState
@@ -38,6 +39,7 @@ class HomeViewModel(
 
     // 1. INPUTS
     private val userIdLiveData = MutableLiveData<String?>()
+
 
     // O estado atual dos filtros
     private val _filterState = MutableLiveData(FilterState())
@@ -91,6 +93,7 @@ class HomeViewModel(
     val todayNotes: LiveData<List<HumorNote>> = allNotesSource.switchMap { notes ->
         MutableLiveData(filterTodayNotes(notes))
     }
+    val totalNotesCount: LiveData<Int> = allNotesSource.map { it.size }
 
     init {
         userIdLiveData.value = auth.currentUser?.uid
