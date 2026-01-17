@@ -12,6 +12,7 @@ import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.FilterTimeRange
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.SortOrder
+import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.catch
@@ -42,6 +43,13 @@ class HomeViewModel(
     private val _filterState = MutableLiveData(FilterState())
     val filterState: LiveData<FilterState> = _filterState
 
+    // Dados do Usuário (Para o Cabeçalho)
+    private val _currentUser = MutableLiveData<User?>()
+    val currentUser: LiveData<User?> = _currentUser
+
+    // Variável para evitar "farmar" semanas perfeitas na mesma sessão
+    private var savedPerfectWeekThisSession = false
+
     // 2. FONTE DE DADOS (Banco de Dados)
     private val allNotesSource: LiveData<List<HumorNote>> = userIdLiveData.switchMap { userId ->
         if (userId.isNullOrBlank()) {
@@ -59,7 +67,7 @@ class HomeViewModel(
 
     // 3. SAÍDAS (Outputs para a UI)
 
-    // --- Lógica da Sequência de Dias (Streak) e Confetes ---
+    // --- A. Lógica da Sequência de Dias (Streak) e Confetes ---
     private val _weekDays = MediatorLiveData<List<DayStatus>>()
     val weekDays: LiveData<List<DayStatus>> = _weekDays
 
@@ -69,7 +77,7 @@ class HomeViewModel(
     private val _streakText = MediatorLiveData<String>()
     val streakText: LiveData<String> = _streakText
 
-    // --- Lista Filtrada para o Histórico ---
+    // --- B. Lista Filtrada para o Histórico (ESTAVA FALTANDO ISTO!) ---
     val filteredHistoryNotes = MediatorLiveData<List<HumorNote>>().apply {
         addSource(allNotesSource) { notes ->
             value = applyFilters(notes, _filterState.value ?: FilterState())
@@ -79,58 +87,79 @@ class HomeViewModel(
         }
     }
 
-    // --- Dados para a Home (Hoje e Progresso Simples) ---
+    // --- C. Dados para a Home (Hoje) ---
     val todayNotes: LiveData<List<HumorNote>> = allNotesSource.switchMap { notes ->
         MutableLiveData(filterTodayNotes(notes))
     }
 
-    val dailyProgress: LiveData<Pair<Int, Long?>> = allNotesSource.switchMap { notes ->
-        val sequence = calculateDailySequence(notes)
-        val lastRecordedTimestamp = notes.maxByOrNull { it.timestamp }?.timestamp
-        MutableLiveData(Pair(sequence, lastRecordedTimestamp))
-    }
-
     init {
         userIdLiveData.value = auth.currentUser?.uid
-        setupWeekLogic() // Inicializa a lógica visual da semana
+        setupWeekLogic()
+        loadUserData() // Carrega nome/foto ao iniciar
     }
 
-    // --- NOVA LÓGICA: Cálculo Visual da Semana ---
+    // --- FUNÇÕES DE CARREGAMENTO ---
 
-    private fun setupWeekLogic() {
-        // Sempre que a lista de notas mudar, recalculamos o visual das bolinhas
-        _weekDays.addSource(allNotesSource) { notes ->
-            calculateWeekStatus(notes)
+    fun loadUserData() {
+        val uid = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            val result = dbRepository.getUser(uid)
+            if (result is DatabaseRepository.Result.Success) {
+                _currentUser.value = result.data
+            }
         }
     }
 
-    private fun calculateWeekStatus(notes: List<HumorNote>) {
+    // --- LÓGICA DE GAMIFICAÇÃO ---
+
+    private fun setupWeekLogic() {
+        _weekDays.addSource(allNotesSource) { notes ->
+            calculateGamification(notes)
+        }
+    }
+
+    private fun calculateGamification(notes: List<HumorNote>) {
+        val currentStreak = calculateCurrentStreak(notes)
+        _streakText.value = "$currentStreak Dias"
+
+        // Lógica de "Limpeza Visual" (Apaga bolinhas se quebrou a sequência)
+        val uniqueDates = notes
+            .map { normalizeToMidnight(it.timestamp) }
+            .distinct()
+            .sortedDescending()
+
+        var streakStartDate: Long = Long.MAX_VALUE
+
+        if (currentStreak > 0 && uniqueDates.isNotEmpty()) {
+            val lastValidDay = uniqueDates.first()
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = lastValidDay
+            calendar.add(Calendar.DAY_OF_YEAR, -(currentStreak - 1))
+            streakStartDate = normalizeToMidnight(calendar.timeInMillis)
+        }
+
         val calendar = Calendar.getInstance()
-        // Zera hora/minuto para comparação justa de datas (meia-noite)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+        val todayMillis = normalizeToMidnight(calendar.timeInMillis)
 
-        val todayMillis = calendar.timeInMillis
         val statusList = mutableListOf<DayStatus>()
-        var daysWithContentCount = 0
+        var daysWithContentLastWeek = 0
 
-        // Vamos gerar os últimos 6 dias + Hoje (Total 7 dias para exibir)
-        val daysToCheck = 6
-
-        for (i in daysToCheck downTo 0) {
+        for (i in 6 downTo 0) {
             val targetDay = Calendar.getInstance()
             targetDay.timeInMillis = todayMillis
-            targetDay.add(Calendar.DAY_OF_YEAR, -i) // Volta 'i' dias
+            targetDay.add(Calendar.DAY_OF_YEAR, -i)
 
-            val dayStart = targetDay.timeInMillis
-            val dayEnd = dayStart + TimeUnit.DAYS.toMillis(1)
+            val dayStart = normalizeToMidnight(targetDay.timeInMillis)
+            val dayEnd = dayStart + TimeUnit.DAYS.toMillis(1) - 1
 
-            // Verifica se existe alguma nota dentro desse intervalo de dia
-            val hasNote = notes.any { it.timestamp in dayStart until dayEnd }
+            val hasPhysicalNote = notes.any {
+                val noteTime = it.timestamp
+                noteTime in dayStart..dayEnd
+            }
 
-            // Define o Label (S, T, Q... ou H)
+            // Pinta apenas se faz parte da sequência atual
+            val isPartOfStreak = hasPhysicalNote && (dayStart >= streakStartDate)
+
             val dayOfWeek = targetDay.get(Calendar.DAY_OF_WEEK)
             val isToday = (i == 0)
             val label = if (isToday) "H" else getDayLetter(dayOfWeek)
@@ -138,42 +167,36 @@ class HomeViewModel(
             statusList.add(
                 DayStatus(
                     label = label,
-                    hasEntry = hasNote,
+                    hasEntry = isPartOfStreak,
                     isToday = isToday,
                     isFuture = false,
                     dateTimestamp = dayStart
                 )
             )
 
-            // Contagem para "Semana Perfeita" (quantos dias da visualização têm registro)
-            if (hasNote) {
-                daysWithContentCount++
+            if (isPartOfStreak) {
+                daysWithContentLastWeek++
             }
         }
 
         _weekDays.value = statusList
-        _streakText.value = "$daysWithContentCount Dias" // Atualiza o badge
 
-        // --- LÓGICA DO CONFETE ---
-        // Se o usuário preencheu todos os 7 dias visíveis (Semana Perfeita)
-        if (daysWithContentCount == 7) {
-            // Só dispara se ainda não disparou nesta sessão
-            if (_showConfetti.value == false) {
-                triggerPerfectWeek()
-            }
+        if (daysWithContentLastWeek == 7 && !savedPerfectWeekThisSession) {
+            triggerPerfectWeek()
         }
     }
 
     private fun triggerPerfectWeek() {
+        if (_showConfetti.value == true) return
         _showConfetti.value = true
+        savedPerfectWeekThisSession = true
+
         val userId = userIdLiveData.value ?: return
         viewModelScope.launch {
             try {
-                // ATENÇÃO: Incrementa o contador no Firebase
                 dbRepository.incrementPerfectWeeks(userId)
-                Log.d("HomeViewModel", "Semana perfeita registrada e salva!")
             } catch (e: Exception) {
-                Log.e("HomeViewModel", "Erro ao salvar semana perfeita: $e")
+                savedPerfectWeekThisSession = false
             }
         }
     }
@@ -182,20 +205,45 @@ class HomeViewModel(
         _showConfetti.value = false
     }
 
-    private fun getDayLetter(dayOfWeek: Int): String {
-        return when (dayOfWeek) {
-            Calendar.SUNDAY -> "D"
-            Calendar.MONDAY -> "S"
-            Calendar.TUESDAY -> "T"
-            Calendar.WEDNESDAY -> "Q"
-            Calendar.THURSDAY -> "Q"
-            Calendar.FRIDAY -> "S"
-            Calendar.SATURDAY -> "S"
-            else -> "?"
+    private fun calculateCurrentStreak(notes: List<HumorNote>): Int {
+        if (notes.isEmpty()) return 0
+        val uniqueActiveDays = notes
+            .map { normalizeToMidnight(it.timestamp) }
+            .distinct()
+            .sortedDescending()
+
+        if (uniqueActiveDays.isEmpty()) return 0
+
+        val today = normalizeToMidnight(System.currentTimeMillis())
+        val yesterday = Calendar.getInstance().apply {
+            timeInMillis = today
+            add(Calendar.DAY_OF_YEAR, -1)
+        }.timeInMillis
+
+        val lastPostDate = uniqueActiveDays.first()
+
+        if (lastPostDate < yesterday) {
+            return 0
         }
+
+        var streak = 0
+        var currentTargetDate = lastPostDate
+
+        for (day in uniqueActiveDays) {
+            if (day == currentTargetDate) {
+                streak++
+                val c = Calendar.getInstance()
+                c.timeInMillis = currentTargetDate
+                c.add(Calendar.DAY_OF_YEAR, -1)
+                currentTargetDate = c.timeInMillis
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
-    // --- AÇÕES EXISTENTES (Busca, Filtro, Delete) ---
+    // --- FUNÇÕES DE FILTRO E UTILITÁRIOS ---
 
     fun updateSearchQuery(query: String) {
         val current = _filterState.value ?: FilterState()
@@ -211,9 +259,7 @@ class HomeViewModel(
     fun deleteNote(note: HumorNote) {
         val userId = userIdLiveData.value ?: return
         val noteId = note.id ?: return
-
         lastDeletedNote = note
-
         viewModelScope.launch {
             dbRepository.deleteHumorNote(userId, noteId)
         }
@@ -222,18 +268,16 @@ class HomeViewModel(
     fun undoDelete() {
         val userId = userIdLiveData.value ?: return
         val noteToRestore = lastDeletedNote ?: return
-
         viewModelScope.launch {
             dbRepository.restoreHumorNote(userId, noteToRestore)
             lastDeletedNote = null
         }
     }
 
-    // --- LÓGICA DE FILTRAGEM E SUPORTE ---
-
     private fun applyFilters(notes: List<HumorNote>, state: FilterState): List<HumorNote> {
         var result = notes
 
+        // Filtro por Texto (Busca)
         if (state.query.isNotEmpty()) {
             result = result.filter {
                 it.descricao?.contains(state.query, ignoreCase = true) == true ||
@@ -241,22 +285,22 @@ class HomeViewModel(
             }
         }
 
+        // Filtro por Humor
         if (state.selectedHumors.isNotEmpty()) {
             result = result.filter { note ->
                 val noteHumor = note.humor ?: ""
-                state.selectedHumors.any { selected ->
-                    selected.equals(noteHumor, ignoreCase = true)
-                }
+                state.selectedHumors.any { selected -> selected.equals(noteHumor, ignoreCase = true) }
             }
         }
 
+        // Filtro "Apenas com anotações"
         if (state.onlyWithNotes) {
             result = result.filter { !it.descricao.isNullOrEmpty() }
         }
 
+        // Filtro por Data (7 dias, 30 dias, Tudo)
         val now = System.currentTimeMillis()
         val oneDay = TimeUnit.DAYS.toMillis(1)
-
         result = when (state.timeRange) {
             FilterTimeRange.LAST_7_DAYS -> {
                 val limit = now - (7 * oneDay)
@@ -269,58 +313,42 @@ class HomeViewModel(
             FilterTimeRange.ALL_TIME -> result
         }
 
+        // Ordenação
         result = when (state.sortOrder) {
             SortOrder.NEWEST -> result.sortedByDescending { it.timestamp }
             SortOrder.OLDEST -> result.sortedBy { it.timestamp }
         }
-
         return result
     }
 
-    private fun getDayUnit(timestamp: Long): Long {
-        return timestamp / TimeUnit.DAYS.toMillis(1)
-    }
-
-    private fun calculateDailySequence(notes: List<HumorNote>): Int {
-        if (notes.isEmpty()) return 0
-        val distinctRecordedDays = notes
-            .map { getDayUnit(it.timestamp) }
-            .distinct()
-            .sortedDescending()
-
-        if (distinctRecordedDays.isEmpty()) return 0
-
-        val todayDayUnit = getDayUnit(System.currentTimeMillis())
-        val lastRecordedDayUnit = distinctRecordedDays.first()
-        val dayDifference = todayDayUnit - lastRecordedDayUnit
-
-        if (dayDifference > 1) return 0
-
-        var sequence = 0
-        var expectedDay = lastRecordedDayUnit
-
-        for (day in distinctRecordedDays) {
-            if (day == expectedDay) {
-                sequence++
-                expectedDay--
-            } else if (day < expectedDay) {
-                break
-            }
-        }
-        return sequence.coerceAtMost(7)
-    }
-
     private fun filterTodayNotes(notes: List<HumorNote>): List<HumorNote> {
-        val todayStart = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        val todayStart = normalizeToMidnight(System.currentTimeMillis())
         val todayEnd = todayStart + TimeUnit.DAYS.toMillis(1)
-
         return notes.filter { note ->
             note.timestamp in todayStart until todayEnd
+        }
+    }
+
+    private fun normalizeToMidnight(timestamp: Long): Long {
+        val c = Calendar.getInstance()
+        c.timeInMillis = timestamp
+        c.set(Calendar.HOUR_OF_DAY, 0)
+        c.set(Calendar.MINUTE, 0)
+        c.set(Calendar.SECOND, 0)
+        c.set(Calendar.MILLISECOND, 0)
+        return c.timeInMillis
+    }
+
+    private fun getDayLetter(dayOfWeek: Int): String {
+        return when (dayOfWeek) {
+            Calendar.SUNDAY -> "D"
+            Calendar.MONDAY -> "S"
+            Calendar.TUESDAY -> "T"
+            Calendar.WEDNESDAY -> "Q"
+            Calendar.THURSDAY -> "Q"
+            Calendar.FRIDAY -> "S"
+            Calendar.SATURDAY -> "S"
+            else -> "?"
         }
     }
 }

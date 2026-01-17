@@ -27,6 +27,10 @@ import com.example.apphumor.utils.SwipeToDeleteCallback
 import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.HomeViewModel
 import com.google.android.material.snackbar.Snackbar
+// Imports Novos
+import android.util.Base64
+import android.graphics.BitmapFactory
+import java.util.Calendar
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -35,9 +39,8 @@ class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
     private lateinit var adapter: HumorNoteAdapter
 
-    // --- VARIÁVEIS DE CONTROLE DE ANIMAÇÃO ---
-    private var pendingAnimation = false // Se true, devemos animar algo na próxima atualização da lista
-    private var editedNoteId: String? = null // Guarda o ID da nota que foi editada (se houver)
+    private var pendingAnimation = false
+    private var editedNoteId: String? = null
 
     private val TAG = "HomeFragment"
 
@@ -46,9 +49,7 @@ class HomeFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
@@ -66,13 +67,52 @@ class HomeFragment : Fragment() {
         setupRecyclerView()
         setupButton()
         setupObservers()
+        setupHeader() // <--- NOVA CHAMADA PARA CONFIGURAR O TOPO
+    }
+
+    // --- NOVA FUNÇÃO: Configura Saudação e Avatar ---
+    private fun setupHeader() {
+        // 1. Define a saudação baseada na hora
+        val calendar = Calendar.getInstance()
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val greeting = when (hour) {
+            in 5..11 -> "Bom dia,"
+            in 12..17 -> "Boa tarde,"
+            else -> "Boa noite,"
+        }
+        binding.tvGreeting.text = greeting
+
+        // 2. Observa os dados do usuário para preencher Nome e Foto
+        viewModel.currentUser.observe(viewLifecycleOwner) { user ->
+            user?.let {
+                // Nome (Pega só o primeiro nome)
+                val firstName = it.nome?.split(" ")?.firstOrNull() ?: "Visitante"
+                binding.tvUserName.text = "$firstName!"
+
+                // Foto (Decodifica Base64)
+                if (!it.fotoBase64.isNullOrEmpty()) {
+                    try {
+                        val imageBytes = Base64.decode(it.fotoBase64, Base64.DEFAULT)
+                        val decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+                        binding.ivUserAvatar.setImageBitmap(decodedImage)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Erro ao decodificar avatar: ${e.message}")
+                        binding.ivUserAvatar.setImageResource(R.drawable.ic_mood_neutral_anim)
+                    }
+                } else {
+                    binding.ivUserAvatar.setImageResource(R.drawable.ic_mood_neutral_anim)
+                }
+            }
+        }
+
+        // 3. Clique no Avatar (Opcional: Leva ao Perfil se você tiver a navegação configurada)
+        // binding.ivUserAvatar.setOnClickListener { ... }
     }
 
     private fun setupRecyclerView() {
         adapter = HumorNoteAdapter(
             showEditButton = true,
             onEditClick = { note ->
-                // Captura o ID da nota antes de ir para a edição
                 editedNoteId = note.id
                 val intent = Intent(requireActivity(), AddHumorActivity::class.java).apply {
                     putExtra("EDIT_NOTE", note)
@@ -110,44 +150,35 @@ class HomeFragment : Fragment() {
 
     private fun setupButton() {
         binding.emptyState.findViewById<View>(R.id.btn_add_record).setOnClickListener {
-            // Se for criar novo, limpamos o ID de edição
             editedNoteId = null
             val intent = Intent(requireActivity(), AddHumorActivity::class.java)
             startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
         }
     }
 
-    // --- AQUI ACONTECE A MÁGICA ---
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        // Se voltou da tela de Adicionar/Editar e deu tudo certo (Salvou)
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             Log.d(TAG, "Nota salva com sucesso. Preparando animação.")
-            pendingAnimation = true // Sinaliza que a próxima carga da lista deve ter animação
+            pendingAnimation = true
+            // Recarrega dados do usuário caso ele tenha mudado a foto/nome no processo
+            viewModel.loadUserData()
         }
     }
 
     private fun setupObservers() {
-        // 1. Observa lista de notas de HOJE
         viewModel.todayNotes.observe(viewLifecycleOwner) { notes ->
             if (notes.isNotEmpty()) {
                 binding.recyclerViewNotes.visibility = View.VISIBLE
                 binding.emptyState.visibility = View.GONE
 
-                // SubmitList com callback (Executa DEPOIS que a lista atualizou)
                 adapter.submitList(notes) {
                     if (pendingAnimation) {
-                        // Decide quem animar:
-                        // Se editou alguém (editedNoteId), anima ele.
-                        // Se criou um novo (null), anima o primeiro da lista.
                         val targetId = editedNoteId ?: notes.firstOrNull()?.id
-
                         if (targetId != null) {
                             adapter.triggerAnimation(targetId)
-                            binding.recyclerViewNotes.smoothScrollToPosition(0) // Garante que o topo esteja visível
+                            binding.recyclerViewNotes.smoothScrollToPosition(0)
                         }
-
-                        // Reseta as flags para não animar de novo sem querer
                         pendingAnimation = false
                         editedNoteId = null
                     }
@@ -158,13 +189,11 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // 2. Observa Badge de Streak
         viewModel.streakText.observe(viewLifecycleOwner) { text ->
             val badgeText = binding.progressCard.root.findViewById<TextView>(R.id.tv_streak_count)
             badgeText?.text = text
         }
 
-        // 3. Observa Confetes
         viewModel.showConfetti.observe(viewLifecycleOwner) { show ->
             if (show) {
                 val lottie = binding.progressCard.root.findViewById<LottieAnimationView>(R.id.lottieConfetti)
@@ -184,7 +213,6 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // 4. Renderiza Dias da Semana
         viewModel.weekDays.observe(viewLifecycleOwner) { days ->
             val container = binding.progressCard.root.findViewById<LinearLayout>(R.id.ll_days_container)
             if (container == null) return@observe
