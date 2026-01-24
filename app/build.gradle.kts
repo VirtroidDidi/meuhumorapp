@@ -45,6 +45,11 @@ android {
 
 dependencies {
 
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk.v1138)
+    testImplementation(libs.kotlinx.coroutines.test.v173)
+    testImplementation(libs.androidx.arch.core.testing)
+
     implementation(libs.coil)
     implementation(libs.coil.gif)
 

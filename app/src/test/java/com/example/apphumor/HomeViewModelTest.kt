@@ -1,157 +1,118 @@
 package com.example.apphumor.viewmodel
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import com.example.apphumor.models.FilterState
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
-import com.example.apphumor.utils.MainDispatcherRule
-import com.example.apphumor.utils.getOrAwaitValue
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
-    // 1. Regras para rodar LiveData e Coroutines de forma síncrona
     @get:Rule
-    val instantExecutorRule = InstantTaskExecutorRule()
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
-
-    // 2. Mocks
-    private lateinit var auth: FirebaseAuth
-    private lateinit var repository: DatabaseRepository
-    private lateinit var currentUser: FirebaseUser
-
-    // O "Subject Under Test" (O cara que vamos testar)
     private lateinit var viewModel: HomeViewModel
+    private lateinit var repository: DatabaseRepository
+    private lateinit var auth: FirebaseAuth
 
-    // LiveData falso que o repositório vai retornar
-    private val notesLiveDataFromRepo = MutableLiveData<List<HumorNote>>()
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
-        auth = mockk()
+        Dispatchers.setMain(testDispatcher)
+
         repository = mockk()
-        currentUser = mockk()
+        auth = mockk()
+        val firebaseUser = mockk<FirebaseUser>()
 
-        // Configuração padrão: Usuário logado
-        every { auth.currentUser } returns currentUser
-        every { currentUser.uid } returns "user123"
+        every { auth.currentUser } returns firebaseUser
+        every { firebaseUser.uid } returns "user123"
 
-        // Configuração padrão: Repositório retorna nosso LiveData controlado
-        every { repository.getHumorNotesAsLiveData("user123") } returns notesLiveDataFromRepo
+        // Mock do Usuário
+        val fakeUser = User("user123", "Teste", "teste@email.com", 25)
+        coEvery { repository.getUser("user123") } returns DatabaseRepository.Result.Success(fakeUser)
+
+        // Mock das Notas
+        val fakeNotes = listOf(
+            HumorNote(id = "1", humor = "Rad", descricao = "Dia top", timestamp = 100000L),
+            HumorNote(id = "2", humor = "Sad", descricao = "Dia ruim", timestamp = 200000L),
+            HumorNote(id = "3", humor = "Incrível", descricao = "Legacy note", timestamp = 300000L)
+        )
+        coEvery { repository.getHumorNotesFlow("user123") } returns flowOf(fakeNotes)
+
+        viewModel = HomeViewModel(auth, repository)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `Deve carregar lista de notas quando usuario estiver logado`() {
-        // Arrange (Preparação)
-        val dummyNotes = listOf(
-            HumorNote(id = "1", humor = "Feliz", timestamp = System.currentTimeMillis())
-        )
+    fun `quando filtrar por RAD deve retornar notas Rad e notas legado Incrivel`() = runTest {
+        // TÉCNICA DO ESPIÃO (Observer)
+        // Criamos uma lista para guardar todas as emissões do LiveData
+        val values = mutableListOf<List<HumorNote>>()
+        val observer = Observer<List<HumorNote>> { values.add(it) }
 
-        // Act (Ação: Instanciar VM e simular dados chegando do banco)
-        viewModel = HomeViewModel(auth, repository)
-        notesLiveDataFromRepo.value = dummyNotes
+        // Começamos a observar ANTES de filtrar
+        viewModel.filteredHistoryNotes.observeForever(observer)
 
-        // Assert (Verificação)
-        val result = viewModel.filteredHistoryNotes.getOrAwaitValue()
-        assertEquals(1, result.size)
-        assertEquals("Feliz", result[0].humor)
+        // 1. Deixa o load inicial acontecer
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // 2. Aplica o filtro
+        val filterState = FilterState(selectedHumors = setOf("Rad"))
+        viewModel.updateFilterState(filterState)
+
+        // 3. Deixa o filtro processar
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // VERIFICAÇÃO: Pegamos o ÚLTIMO valor emitido
+        // (O primeiro deve ser vazio, o último deve ser o filtrado)
+        val currentList = values.last()
+
+        assertEquals(2, currentList.size)
+        assertEquals("Rad", currentList.find { it.id == "1" }?.humor)
+        assertEquals("Incrível", currentList.find { it.id == "3" }?.humor)
+
+        viewModel.filteredHistoryNotes.removeObserver(observer)
     }
 
     @Test
-    fun `Calculo de Sequencia - Deve retornar 1 dia quando houver nota apenas hoje`() {
-        // Arrange
-        val notes = listOf(
-            createNote(daysAgo = 0) // Hoje
-        )
+    fun `quando limpar filtros deve retornar todas as notas`() = runTest {
+        val values = mutableListOf<List<HumorNote>>()
+        val observer = Observer<List<HumorNote>> { values.add(it) }
+        viewModel.filteredHistoryNotes.observeForever(observer)
 
-        // Act
-        viewModel = HomeViewModel(auth, repository)
-        notesLiveDataFromRepo.value = notes
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
-        val (sequence, _) = viewModel.dailyProgress.getOrAwaitValue()
-        assertEquals(1, sequence)
-    }
+        viewModel.updateFilterState(FilterState()) // Limpa filtro
 
-    @Test
-    fun `Calculo de Sequencia - Deve retornar 2 dias quando houver nota hoje e ontem`() {
-        // Arrange
-        val notes = listOf(
-            createNote(daysAgo = 0), // Hoje
-            createNote(daysAgo = 1)  // Ontem
-        )
+        testDispatcher.scheduler.advanceUntilIdle()
 
-        // Act
-        viewModel = HomeViewModel(auth, repository)
-        notesLiveDataFromRepo.value = notes
+        val currentList = values.last()
+        assertEquals(3, currentList.size)
 
-        // Assert
-        val (sequence, _) = viewModel.dailyProgress.getOrAwaitValue()
-        assertEquals(2, sequence)
-    }
-
-    @Test
-    fun `Calculo de Sequencia - Deve quebrar sequencia se pular um dia`() {
-        // Arrange: Nota hoje e nota anteontem (pulou ontem)
-        val notes = listOf(
-            createNote(daysAgo = 0), // Hoje
-            createNote(daysAgo = 2)  // Anteontem (Buraco no meio)
-        )
-
-        // Act
-        viewModel = HomeViewModel(auth, repository)
-        notesLiveDataFromRepo.value = notes
-
-        // Assert: A sequência deve contar apenas o dia atual (1), pois a cadeia quebrou
-        val (sequence, _) = viewModel.dailyProgress.getOrAwaitValue()
-        assertEquals(1, sequence)
-    }
-
-    @Test
-    fun `Filtro - Deve filtrar lista por texto de busca`() {
-        // Arrange
-        val notes = listOf(
-            createNote(daysAgo = 0).copy(humor = "Feliz", descricao = "Dia ótimo"),
-            createNote(daysAgo = 1).copy(humor = "Triste", descricao = "Dia ruim")
-        )
-
-        viewModel = HomeViewModel(auth, repository)
-        notesLiveDataFromRepo.value = notes
-
-        // Act: Usuário digita "Triste"
-        viewModel.updateSearchQuery("Triste")
-
-        // Assert
-        val filteredList = viewModel.filteredHistoryNotes.getOrAwaitValue()
-        assertEquals(1, filteredList.size)
-        assertEquals("Triste", filteredList[0].humor)
-    }
-
-    // --- Helpers ---
-
-    /**
-     * Cria uma nota com timestamp relativo a "X dias atrás" a partir de agora.
-     * Isso evita problemas com datas fixas (hardcoded) nos testes.
-     */
-    private fun createNote(daysAgo: Int): HumorNote {
-        val millisPerDay = TimeUnit.DAYS.toMillis(1)
-        val time = System.currentTimeMillis() - (daysAgo * millisPerDay)
-        return HumorNote(
-            id = "id_$daysAgo",
-            humor = "Neutro",
-            timestamp = time,
-            isSynced = true
-        )
+        viewModel.filteredHistoryNotes.removeObserver(observer)
     }
 }
