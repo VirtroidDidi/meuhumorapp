@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,32 +16,37 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.apphumor.databinding.FragmentProfileBinding
 import com.example.apphumor.di.DependencyProvider
+import com.example.apphumor.models.Insight
+import com.example.apphumor.models.User
 import com.example.apphumor.utils.ImageUtils
 import com.example.apphumor.utils.NotificationScheduler
 import com.example.apphumor.utils.ThemePreferences
+import com.example.apphumor.viewmodel.MoodStat
+import com.example.apphumor.viewmodel.ProfileSaveState // Importe o estado novo
+import com.example.apphumor.viewmodel.ProfileUiState // Importe o estado novo
 import com.example.apphumor.viewmodel.ProfileViewModel
 import com.example.apphumor.viewmodel.ProfileViewModelFactory
-import com.google.android.material.color.MaterialColors
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
-import java.util.Locale
-import android.graphics.Color
-import com.example.apphumor.viewmodel.MoodStat
+import com.github.mikephil.charting.animation.Easing
 import com.github.mikephil.charting.data.PieData
 import com.github.mikephil.charting.data.PieDataSet
 import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.animation.Easing
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
+import java.util.Locale
 
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
-
     private lateinit var viewModel: ProfileViewModel
 
-    // Começa falso (Modo Visualização - Tudo travado)
     private var isEditing = false
 
     private val pickImageLauncher =
@@ -83,20 +89,17 @@ class ProfileFragment : Fragment() {
 
         setupChartUI()
         setupListeners()
-        setupObservers()
+        setupObservers() // Aqui está a mágica
         setupThemeUI()
 
-        // Garante que a tela comece travada (Modo Leitura)
         setEditingMode(false)
     }
 
+    // (setupThemeUI, showThemeSelectionDialog, updateThemeLabel -> MANTÉM IGUAL)
     private fun setupThemeUI() {
         updateThemeLabel()
-
         binding.llThemeSelector.setOnClickListener {
-            // TRAVA DE SEGURANÇA: Só abre o dialog se estiver editando
             if (!isEditing) return@setOnClickListener
-
             showThemeSelectionDialog()
         }
     }
@@ -132,6 +135,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupChartUI() {
+        // (MANTÉM IGUAL)
         binding.pieChartProfile.apply {
             description.isEnabled = false
             legend.isEnabled = false
@@ -146,50 +150,40 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        // LÓGICA DO BOTÃO PRINCIPAL (CORRIGIDA)
+        // (MANTÉM IGUAL)
         binding.btnEditProfile.setOnClickListener {
             if (isEditing) {
-                // Se ESTÁ editando (botão diz "Salvar"), então SALVA
                 val newName = binding.etUserName.text.toString().trim()
                 val newAge = binding.etUserIdade.text.toString().toIntOrNull() ?: 0
                 viewModel.saveAllChanges(newName, newAge)
             } else {
-                // Se NÃO está editando (botão diz "Editar"), então HABILITA EDIÇÃO
                 setEditingMode(true)
             }
         }
 
-        // FOTO: Só permite clicar se estiver editando
         val imageClickListener = View.OnClickListener {
-            if (isEditing) {
-                pickImageLauncher.launch("image/*")
-            }
+            if (isEditing) pickImageLauncher.launch("image/*")
         }
         binding.ivProfileAvatar.setOnClickListener(imageClickListener)
         binding.ivEditIconIndicator.setOnClickListener(imageClickListener)
 
         binding.btnLogoutFragment.setOnClickListener { viewModel.logout() }
 
-        // HORÁRIO: Só abre se estiver editando E switch ligado
         binding.tvSelectedTimePerfil.setOnClickListener {
             if (isEditing && binding.switchNotificacaoPerfil.isChecked) {
                 showTimePickerDialog()
             }
         }
 
-        // SWITCH: Atualiza visual imediatamente ao mudar
         binding.switchNotificacaoPerfil.setOnCheckedChangeListener { buttonView, isChecked ->
-            // Se estiver editando, atualiza a visibilidade do horário em tempo real
             if (isEditing) {
                 binding.tvSelectedTimePerfil.isEnabled = isChecked
                 binding.llHorarioContainerPerfil.alpha = if (isChecked) 1.0f else 0.5f
             }
-
             if (buttonView.isPressed) {
                 if (isChecked) {
-                    if (hasNotificationPermission()) {
-                        viewModel.setDraftNotificationEnabled(true)
-                    } else {
+                    if (hasNotificationPermission()) viewModel.setDraftNotificationEnabled(true)
+                    else {
                         buttonView.isChecked = false
                         requestNotificationPermission()
                     }
@@ -200,166 +194,184 @@ class ProfileFragment : Fragment() {
         }
     }
 
-    // --- CORAÇÃO DA LÓGICA DE ESTADO ---
     private fun setEditingMode(editing: Boolean) {
+        // (MANTÉM IGUAL - Lógica visual de habilitar/desabilitar)
         isEditing = editing
-
-        // 1. Campos de Texto (Habilita/Desabilita)
         binding.etUserName.isEnabled = editing
         binding.etUserIdade.isEnabled = editing
-
-        // 2. Switch
         binding.switchNotificacaoPerfil.isEnabled = editing
-
-        // 3. Horário (Só habilita se Editando + Switch Ligado)
         val isNotifOn = binding.switchNotificacaoPerfil.isChecked
         binding.tvSelectedTimePerfil.isEnabled = editing && isNotifOn
         binding.llHorarioContainerPerfil.alpha = if (editing && isNotifOn) 1.0f else 0.5f
-
-        // 4. Seletor de Tema
         binding.llThemeSelector.isEnabled = editing
         binding.llThemeSelector.alpha = if (editing) 1.0f else 0.5f
 
-        // 5. Configura o Botão (Texto e Ícone)
         if (editing) {
-            // MODO EDIÇÃO -> Botão vira "SALVAR"
             binding.btnEditProfile.text = getString(R.string.action_save_changes)
             binding.btnEditProfile.setIconResource(R.drawable.ic_save_24)
         } else {
-            // MODO VISUALIZAÇÃO -> Botão vira "EDITAR"
             binding.btnEditProfile.text = getString(R.string.action_edit_profile)
             binding.btnEditProfile.setIconResource(R.drawable.ic_edit_24)
         }
-
-        // 6. Botão de Logout e ícone de edição de foto
         binding.btnLogoutFragment.isVisible = !editing
-        binding.ivEditIconIndicator.isVisible = editing // Ícone de lápis na foto só aparece ao editar
+        binding.ivEditIconIndicator.isVisible = editing
     }
 
+    // --- AQUI ESTÁ A GRANDE MUDANÇA ---
     private fun setupObservers() {
-        // 1. Dados do Usuário (Nome, Email, Idade)
-        viewModel.userProfile.observe(viewLifecycleOwner) { user ->
-            user?.let {
-                binding.etUserEmail.setText(it.email)
-                binding.etUserName.setText(it.nome)
-                binding.etUserIdade.setText(it.idade.toString())
-                binding.tvWelcomeMessage.text = it.nome ?: "Usuário"
-
-                // --- NOVO: ATUALIZA O CARD DE CONQUISTAS ---
-                // Preenche o Título do Nível
-                binding.tvLevelTitle.text = it.getTituloNivel()
-
-                // Preenche o Contador de Semanas
-                val weeks = it.semanasPerfeitas
-                val weeksText = if (weeks == 1) "1 Semana Perfeita" else "$weeks Semanas Perfeitas"
-                binding.chipWeeksCount.text = weeksText
-            }
-        }
-
-        // 2. Foto de Perfil
-        viewModel.draftPhotoBase64.observe(viewLifecycleOwner) { base64 ->
-            if (base64 != null) {
-                // CASO 1: Tem foto real
-                val bitmap = ImageUtils.base64ToBitmap(base64)
-                binding.ivProfileAvatar.setImageBitmap(bitmap)
-                binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
-                binding.ivProfileAvatar.clearColorFilter()
-                binding.ivProfileAvatar.imageTintList = null
-            } else {
-                // CASO 2: Sem foto (Bonequinho padrão)
-                binding.ivProfileAvatar.setImageResource(R.drawable.ic_usuario_24)
-                val primaryColor = MaterialColors.getColor(binding.ivProfileAvatar, com.google.android.material.R.attr.colorPrimary)
-                binding.ivProfileAvatar.setColorFilter(primaryColor)
-                binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_INSIDE
-            }
-        }
-
-        // 3. Switch de Notificação
-        viewModel.draftNotificationEnabled.observe(viewLifecycleOwner) { isEnabled ->
-            if (binding.switchNotificacaoPerfil.isChecked != isEnabled) {
-                binding.switchNotificacaoPerfil.isChecked = isEnabled
-            }
-            // Só muda a opacidade visual se estiver editando
-            if (isEditing) {
-                binding.llHorarioContainerPerfil.alpha = if (isEnabled) 1.0f else 0.5f
-            }
-        }
-
-        // 4. Horário do Lembrete
-        viewModel.draftTime.observe(viewLifecycleOwner) { (h, m) ->
-            binding.tvSelectedTimePerfil.text = String.format(Locale.getDefault(), "%02d:%02d", h, m)
-        }
-
-        // 5. Estado de Carregamento (Loading)
-        viewModel.loading.observe(viewLifecycleOwner) { isLoading ->
-            binding.progressBarProfile.isVisible = isLoading
-            // Bloqueia botões enquanto salva
-            binding.btnEditProfile.isEnabled = !isLoading
-            binding.ivProfileAvatar.isEnabled = !isLoading && isEditing
-        }
-
-        // 6. Mensagens de Sucesso/Erro (Toast)
-        viewModel.updateStatus.observe(viewLifecycleOwner) { status ->
-            status?.let {
-                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                // Se salvou dados (e não apenas foto), sai do modo edição
-                if (it.contains("sucesso", ignoreCase = true) && !it.contains("Foto")) {
-                    setEditingMode(false)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // 1. OBSERVAR ESTADO GERAL DA TELA (Loading / Content / Error)
+                launch {
+                    viewModel.uiState.collect { state ->
+                        when (state) {
+                            is ProfileUiState.Loading -> {
+                                binding.progressBarProfile.isVisible = true
+                                binding.cardData.isVisible = false
+                                binding.cardAchievements.isVisible = false
+                            }
+                            is ProfileUiState.Error -> {
+                                binding.progressBarProfile.isVisible = false
+                                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                            }
+                            is ProfileUiState.Content -> {
+                                binding.progressBarProfile.isVisible = false
+                                binding.cardData.isVisible = true
+                                binding.cardAchievements.isVisible = true
+                                updateUIWithContent(state)
+                            }
+                        }
+                    }
                 }
-                viewModel.clearStatus()
-            }
-        }
 
-        // 7. Agendamento do Alarme (WorkManager)
-        viewModel.scheduleNotificationEvent.observe(viewLifecycleOwner) { event ->
-            event?.let { (enabled, time) ->
-                val parts = time.split(":")
-                NotificationScheduler.scheduleDailyReminder(requireContext(), parts[0].toInt(), parts[1].toInt(), enabled)
-                viewModel.clearScheduleEvent()
-            }
-        }
+                // 2. OBSERVAR ESTADO DE SALVAMENTO (Feedback)
+                launch {
+                    viewModel.saveState.collect { state ->
+                        when (state) {
+                            is ProfileSaveState.Idle -> {
+                                binding.progressBarProfile.isVisible = false
+                                binding.btnEditProfile.isEnabled = true
+                            }
+                            is ProfileSaveState.Saving -> {
+                                binding.progressBarProfile.isVisible = true
+                                binding.btnEditProfile.isEnabled = false
+                            }
+                            is ProfileSaveState.Success -> {
+                                binding.progressBarProfile.isVisible = false
+                                binding.btnEditProfile.isEnabled = true
+                                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
 
-        // 8. Logout
-        viewModel.logoutEvent.observe(viewLifecycleOwner) { loggedOut ->
-            if (loggedOut) {
-                logoutListener?.onLogoutSuccess()
-                viewModel.clearLogoutEvent()
-            }
-        }
+                                // Se foi um salvamento total (não apenas foto), sai da edição
+                                if (!state.message.contains("Foto")) {
+                                    setEditingMode(false)
+                                }
+                                viewModel.clearSaveStatus()
+                            }
+                            is ProfileSaveState.Error -> {
+                                binding.progressBarProfile.isVisible = false
+                                binding.btnEditProfile.isEnabled = true
+                                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                                viewModel.clearSaveStatus()
+                            }
+                        }
+                    }
+                }
 
-        // 9. Gráfico de Pizza (Stats)
-        viewModel.moodStats.observe(viewLifecycleOwner) { stats ->
-            if (stats.isNullOrEmpty()) {
-                binding.pieChartProfile.isVisible = false
-                binding.tvChartEmptyState.isVisible = true
-            } else {
-                binding.pieChartProfile.isVisible = true
-                binding.tvChartEmptyState.isVisible = false
-                updateChartData(stats)
-            }
-        }
-
-        // 10. Card Inteligente (Insights)
-        viewModel.insight.observe(viewLifecycleOwner) { insight ->
-            insight?.let {
-                binding.tvInsightTitle.text = it.title
-                binding.tvInsightMessage.text = it.message
-                binding.ivInsightIcon.setImageResource(it.iconRes)
-                try {
-                    val colorContent = ContextCompat.getColor(requireContext(), it.colorRes)
-                    val colorBackground = ContextCompat.getColor(requireContext(), it.backgroundTint)
-
-                    binding.ivInsightIcon.setColorFilter(colorContent)
-                    binding.tvInsightTitle.setTextColor(colorContent)
-                    binding.cardSmartInsight.setCardBackgroundColor(colorBackground)
-                    binding.cardSmartInsight.isVisible = true
-                } catch (e: Exception) {
-                    binding.cardSmartInsight.setCardBackgroundColor(Color.LTGRAY)
+                // 3. OBSERVAR DRAFTS (Mudanças em tempo real durante edição)
+                launch {
+                    viewModel.draftPhotoBase64.collect { base64 ->
+                        updateAvatar(base64)
+                    }
+                }
+                launch {
+                    viewModel.draftNotificationEnabled.collect { isEnabled ->
+                        if (binding.switchNotificacaoPerfil.isChecked != isEnabled) {
+                            binding.switchNotificacaoPerfil.isChecked = isEnabled
+                        }
+                        if (isEditing) binding.llHorarioContainerPerfil.alpha = if (isEnabled) 1.0f else 0.5f
+                    }
+                }
+                launch {
+                    viewModel.draftTime.collect { (h, m) ->
+                        binding.tvSelectedTimePerfil.text = String.format(Locale.getDefault(), "%02d:%02d", h, m)
+                    }
+                }
+                launch {
+                    viewModel.scheduleNotificationEvent.collect { event ->
+                        event?.let { (enabled, time) ->
+                            val parts = time.split(":")
+                            NotificationScheduler.scheduleDailyReminder(requireContext(), parts[0].toInt(), parts[1].toInt(), enabled)
+                            viewModel.clearScheduleEvent()
+                        }
+                    }
+                }
+                launch {
+                    viewModel.logoutEvent.collect { loggedOut ->
+                        if (loggedOut) {
+                            logoutListener?.onLogoutSuccess()
+                            viewModel.clearLogoutEvent()
+                        }
+                    }
                 }
             }
         }
     }
 
+    private fun updateUIWithContent(content: ProfileUiState.Content) {
+        // Preenche campos
+        binding.etUserEmail.setText(content.user.email)
+        binding.etUserName.setText(content.user.nome)
+        binding.etUserIdade.setText(content.user.idade.toString())
+        binding.tvWelcomeMessage.text = content.user.nome ?: "Usuário"
+
+        // Conquistas
+        binding.tvLevelTitle.text = content.user.getTituloNivel()
+        val weeks = content.user.semanasPerfeitas
+        binding.chipWeeksCount.text = if (weeks == 1) "1 Semana Perfeita" else "$weeks Semanas Perfeitas"
+
+        // Gráfico
+        if (content.moodStats.isEmpty()) {
+            binding.pieChartProfile.isVisible = false
+            binding.tvChartEmptyState.isVisible = true
+        } else {
+            binding.pieChartProfile.isVisible = true
+            binding.tvChartEmptyState.isVisible = false
+            updateChartData(content.moodStats)
+        }
+
+        // Insight
+        val insight = content.insight
+        binding.tvInsightTitle.text = insight.title
+        binding.tvInsightMessage.text = insight.message
+        binding.ivInsightIcon.setImageResource(insight.iconRes)
+        try {
+            val colorContent = ContextCompat.getColor(requireContext(), insight.colorRes)
+            val colorBackground = ContextCompat.getColor(requireContext(), insight.backgroundTint)
+            binding.ivInsightIcon.setColorFilter(colorContent)
+            binding.tvInsightTitle.setTextColor(colorContent)
+            binding.cardSmartInsight.setCardBackgroundColor(colorBackground)
+            binding.cardSmartInsight.isVisible = true
+        } catch (e: Exception) {
+            binding.cardSmartInsight.setCardBackgroundColor(Color.LTGRAY)
+        }
+    }
+
+    private fun updateAvatar(base64: String?) {
+        if (base64 != null) {
+            val bitmap = ImageUtils.base64ToBitmap(base64)
+            binding.ivProfileAvatar.setImageBitmap(bitmap)
+            binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_CROP
+            binding.ivProfileAvatar.clearColorFilter()
+            binding.ivProfileAvatar.imageTintList = null
+        } else {
+            binding.ivProfileAvatar.setImageResource(R.drawable.ic_usuario_24)
+            val primaryColor = MaterialColors.getColor(binding.ivProfileAvatar, com.google.android.material.R.attr.colorPrimary)
+            binding.ivProfileAvatar.setColorFilter(primaryColor)
+            binding.ivProfileAvatar.scaleType = ImageView.ScaleType.CENTER_INSIDE
+        }
+    }
+
+    // (updateChartData, showTimePickerDialog, hasNotificationPermission... MANTÉM IGUAL)
     private fun updateChartData(stats: List<MoodStat>) {
         val entries = ArrayList<PieEntry>()
         val colors = ArrayList<Int>()
@@ -367,7 +379,6 @@ class ProfileFragment : Fragment() {
 
         stats.forEach { stat ->
             total += stat.count
-            // Só mostra o texto se tiver espaço (count >= 3)
             val labelText = if (stat.count < 3) "" else requireContext().getString(stat.labelRes)
             entries.add(PieEntry(stat.count.toFloat(), labelText))
             colors.add(ContextCompat.getColor(requireContext(), stat.colorRes))
@@ -389,14 +400,10 @@ class ProfileFragment : Fragment() {
         binding.pieChartProfile.centerText = "Total\n$total"
         binding.pieChartProfile.setCenterTextSize(14f)
 
-        // --- CORREÇÃO AQUI (Forma Nativa do Android) ---
         val typedValue = android.util.TypedValue()
-        // Busca a cor "OnSurface" (cor do texto padrão) do tema atual
         requireContext().theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
         val dynamicColor = typedValue.data
-
         binding.pieChartProfile.setCenterTextColor(dynamicColor)
-        // ------------------------------------------------
 
         binding.pieChartProfile.legend.isEnabled = false
         binding.pieChartProfile.description.isEnabled = false
@@ -405,7 +412,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun showTimePickerDialog() {
-        val current = viewModel.draftTime.value ?: Pair(20, 0)
+        val current = viewModel.draftTime.value
         TimePickerDialog(requireContext(), { _, h, m -> viewModel.setDraftTime(h, m) }, current.first, current.second, true).show()
     }
 

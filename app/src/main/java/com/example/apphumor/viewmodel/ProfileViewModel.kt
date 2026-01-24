@@ -2,13 +2,11 @@ package com.example.apphumor.viewmodel
 
 import android.content.Context
 import android.net.Uri
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.HumorNote
-import com.example.apphumor.models.HumorType // [NOVO] Import do Enum
+import com.example.apphumor.models.HumorType
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.example.apphumor.utils.ImageUtils
@@ -16,192 +14,138 @@ import com.example.apphumor.utils.InsightAnalysis
 import com.example.apphumor.utils.InsightResult
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-
+// --- [CORREÇÃO] A CLASSE QUE FALTAVA ---
 data class MoodStat(
     val labelRes: Int,
     val count: Int,
     val colorRes: Int
 )
+// ---------------------------------------
+
+// 1. ESTADO DE EXIBIÇÃO DA TELA (Dados carregados)
+sealed interface ProfileUiState {
+    object Loading : ProfileUiState
+    data class Error(val message: String) : ProfileUiState
+    data class Content(
+        val user: User,
+        val moodStats: List<MoodStat>,
+        val insight: InsightResult
+    ) : ProfileUiState
+}
+
+// 2. ESTADO DE AÇÃO (Salvar/Editar)
+sealed interface ProfileSaveState {
+    object Idle : ProfileSaveState
+    object Saving : ProfileSaveState
+    data class Success(val message: String) : ProfileSaveState
+    data class Error(val message: String) : ProfileSaveState
+}
 
 class ProfileViewModel(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
-    private val _insight = MutableLiveData<InsightResult>()
-    val insight: LiveData<InsightResult> = _insight
-    // --- ESTADOS ---
-    private val _userProfile = MutableLiveData<User?>()
-    val userProfile: LiveData<User?> = _userProfile
+    // Estados Reativos (Flows)
+    private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
+    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private val _loading = MutableLiveData<Boolean>()
-    val loading: LiveData<Boolean> = _loading
+    private val _saveState = MutableStateFlow<ProfileSaveState>(ProfileSaveState.Idle)
+    val saveState: StateFlow<ProfileSaveState> = _saveState.asStateFlow()
 
-    private val _updateStatus = MutableLiveData<String?>()
-    val updateStatus: LiveData<String?> = _updateStatus
+    // Estados internos para Rascunho (Drafts)
+    private val _draftPhotoBase64 = MutableStateFlow<String?>(null)
+    val draftPhotoBase64: StateFlow<String?> = _draftPhotoBase64.asStateFlow()
 
-    private val _logoutEvent = MutableLiveData<Boolean>()
-    val logoutEvent: LiveData<Boolean> = _logoutEvent
+    private val _draftNotificationEnabled = MutableStateFlow(true)
+    val draftNotificationEnabled: StateFlow<Boolean> = _draftNotificationEnabled.asStateFlow()
 
-    // --- RASCUNHOS (DRAFT) ---
-    private val _draftNotificationEnabled = MutableLiveData<Boolean>()
-    val draftNotificationEnabled: LiveData<Boolean> = _draftNotificationEnabled
+    private val _draftTime = MutableStateFlow(Pair(20, 0))
+    val draftTime: StateFlow<Pair<Int, Int>> = _draftTime.asStateFlow()
 
-    private val _draftTime = MutableLiveData<Pair<Int, Int>>()
-    val draftTime: LiveData<Pair<Int, Int>> = _draftTime
+    private val _scheduleNotificationEvent = MutableStateFlow<Pair<Boolean, String>?>(null)
+    val scheduleNotificationEvent: StateFlow<Pair<Boolean, String>?> = _scheduleNotificationEvent.asStateFlow()
 
-    // Rascunho da Foto (apenas para exibição imediata)
-    private val _draftPhotoBase64 = MutableLiveData<String?>()
-    val draftPhotoBase64: LiveData<String?> = _draftPhotoBase64
-
-    private val _scheduleNotificationEvent = MutableLiveData<Pair<Boolean, String>?>()
-    val scheduleNotificationEvent: LiveData<Pair<Boolean, String>?> = _scheduleNotificationEvent
-
-    private val _moodStats = MutableLiveData<List<MoodStat>>()
-    val moodStats: LiveData<List<MoodStat>> = _moodStats
+    private val _logoutEvent = MutableStateFlow(false)
+    val logoutEvent: StateFlow<Boolean> = _logoutEvent.asStateFlow()
 
     init {
-        loadUserProfile()
-        loadMoodStats()
+        loadData()
     }
 
-
-    fun loadMoodStats() {
-        val userId = auth.currentUser?.uid ?: return
-
-        viewModelScope.launch {
-            // Buscamos todas as notas
-            val notes = dbRepository.getHumorNotesOnce(userId)
-
-            if (notes.isNotEmpty()) {
-                // 1. O GRÁFICO (Atualizado para usar HumorType)
-                val stats = notes
-                    .groupingBy {
-                        // Agrupa usando o Enum (resolve legados automaticamente)
-                        HumorType.fromKey(it.humor)
-                    }
-                    .eachCount()
-                    .map { (type, count) ->
-                        // Agora pegamos as cores e textos direto do Enum, sem HumorUtils
-                        MoodStat(
-                            labelRes = type.labelRes,
-                            count = count,
-                            colorRes = type.colorRes
-                        )
-                    }
-                    .sortedByDescending { it.count }
-                _moodStats.value = stats
-
-                // 2. O INSIGHT INTELIGENTE
-                val smartInsight = InsightAnalysis.generateInsight(notes)
-                _insight.value = smartInsight
-
-            } else {
-                _moodStats.value = emptyList()
-                _insight.value = InsightAnalysis.generateInsight(emptyList())
-            }
+    // Carrega TUDO de uma vez (Parallel Fetch)
+    private fun loadData() {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            _uiState.value = ProfileUiState.Error("Usuário não logado.")
+            return
         }
-    }
-
-    fun loadUserProfile() {
-        val userId = auth.currentUser?.uid ?: return
-        _loading.value = true
 
         viewModelScope.launch {
-            val result = dbRepository.getUser(userId)
-            _loading.value = false
-            if (result is DatabaseRepository.Result.Success) {
-                val user = result.data
-                _userProfile.value = user
-                user?.let {
-                    _draftNotificationEnabled.value = it.notificacaoAtiva
-                    _draftPhotoBase64.value = it.fotoBase64 // Carrega a foto atual
-                    val parts = it.horarioNotificacao.split(":")
+            _uiState.value = ProfileUiState.Loading
+            try {
+                // Roda as duas buscas em paralelo para ser mais rápido
+                val userDeferred = async { dbRepository.getUser(userId) }
+                val notesDeferred = async { dbRepository.getHumorNotesOnce(userId) }
+
+                val userResult = userDeferred.await()
+                val notes = notesDeferred.await()
+
+                if (userResult is DatabaseRepository.Result.Success && userResult.data != null) {
+                    val user = userResult.data
+
+                    // Processa estatísticas
+                    val stats = processStats(notes)
+                    val insight = InsightAnalysis.generateInsight(notes)
+
+                    // Prepara drafts iniciais
+                    _draftNotificationEnabled.value = user.notificacaoAtiva
+                    _draftPhotoBase64.value = user.fotoBase64
+                    val parts = user.horarioNotificacao.split(":")
                     if (parts.size == 2) {
-                        _draftTime.value =
-                            Pair(parts[0].toIntOrNull() ?: 20, parts[1].toIntOrNull() ?: 0)
+                        _draftTime.value = Pair(parts[0].toIntOrNull() ?: 20, parts[1].toIntOrNull() ?: 0)
                     }
+
+                    // Emite SUCESSO com todos os dados prontos
+                    _uiState.value = ProfileUiState.Content(user, stats, insight)
+                } else {
+                    _uiState.value = ProfileUiState.Error("Falha ao carregar perfil.")
                 }
+            } catch (e: Exception) {
+                _uiState.value = ProfileUiState.Error(e.message ?: "Erro desconhecido")
             }
         }
     }
 
-    // --- NOVA FUNÇÃO: SALVA A FOTO IMEDIATAMENTE ---
-    fun updatePhotoImmediately(context: Context, uri: Uri) {
-        _loading.value = true // Mostra loading
-
-        viewModelScope.launch(Dispatchers.IO) {
-            // 1. Processa a imagem em Background
-            val base64 = ImageUtils.uriToBase64(context, uri)
-
-            if (base64 != null) {
-                // 2. Atualiza a visualização local
-                _draftPhotoBase64.postValue(base64)
-
-                // 3. Prepara o objeto atualizado
-                val currentUser = _userProfile.value
-                if (currentUser != null) {
-                    val updatedUser = currentUser.copy(fotoBase64 = base64)
-
-                    // 4. Salva no Firebase AGORA
-                    val result = dbRepository.updateUser(updatedUser)
-
-                    if (result is DatabaseRepository.Result.Success) {
-                        // Sucesso: Atualiza o perfil oficial na memória
-                        _userProfile.postValue(updatedUser)
-                        _updateStatus.postValue("Foto de perfil atualizada!")
-                    } else {
-                        _updateStatus.postValue("Erro ao salvar foto.")
-                    }
-                }
-            } else {
-                _updateStatus.postValue("Erro ao processar imagem.")
+    private fun processStats(notes: List<HumorNote>): List<MoodStat> {
+        if (notes.isEmpty()) return emptyList()
+        return notes
+            .groupingBy { HumorType.fromKey(it.humor) }
+            .eachCount()
+            .map { (type, count) ->
+                MoodStat(type.labelRes, count, type.colorRes)
             }
-            _loading.postValue(false) // Esconde loading
-        }
+            .sortedByDescending { it.count }
     }
 
-    // Apenas atualiza o draft (se precisar exibir sem salvar, mas agora usamos o de cima)
-    fun processSelectedImage(context: Context, uri: Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val base64 = ImageUtils.uriToBase64(context, uri)
-            _draftPhotoBase64.postValue(base64)
-        }
-    }
+    // --- AÇÕES DE SALVAMENTO ---
 
-    // Setters de Draft
-    fun setDraftNotificationEnabled(enabled: Boolean) {
-        _draftNotificationEnabled.value = enabled
-    }
-
-    fun setDraftTime(hour: Int, minute: Int) {
-        _draftTime.value = Pair(hour, minute)
-    }
-
-    fun clearScheduleEvent() {
-        _scheduleNotificationEvent.value = null
-    }
-
-    fun clearStatus() {
-        _updateStatus.value = null
-    }
-
-    fun clearLogoutEvent() {
-        _logoutEvent.value = false
-    }
-
-    // Salva APENAS Nome, Idade e Configurações (A foto já foi salva antes)
     fun saveAllChanges(newName: String, newAge: Int) {
-        val currentUser = _userProfile.value ?: return
+        val currentState = _uiState.value
+        if (currentState !is ProfileUiState.Content) return // Só salva se tiver dados carregados
 
-        // Mantém a foto que já está salva no usuário (ou a nova se tiver atualizado o objeto)
-        val finalPhoto = currentUser.fotoBase64
+        val currentUser = currentState.user
+        val finalPhoto = currentState.user.fotoBase64 // A foto já foi salva antes
 
-        val isNotifEnabled = _draftNotificationEnabled.value ?: currentUser.notificacaoAtiva
-        val (hour, minute) = _draftTime.value ?: Pair(20, 0)
+        val isNotifEnabled = _draftNotificationEnabled.value
+        val (hour, minute) = _draftTime.value
         val timeString = String.format(Locale.getDefault(), "%02d:%02d", hour, minute)
 
         val updatedUser = currentUser.copy(
@@ -212,23 +156,53 @@ class ProfileViewModel(
             fotoBase64 = finalPhoto
         )
 
-        _loading.value = true
         viewModelScope.launch {
+            _saveState.value = ProfileSaveState.Saving
             val result = dbRepository.updateUser(updatedUser)
-            _loading.value = false
+
             if (result is DatabaseRepository.Result.Success) {
-                _userProfile.value = updatedUser
-                _updateStatus.value = "Dados salvos com sucesso!"
+                // Atualiza o estado da tela com os dados novos
+                _uiState.value = currentState.copy(user = updatedUser)
                 _scheduleNotificationEvent.value = Pair(isNotifEnabled, timeString)
-                setEditingMode(false)
+                _saveState.value = ProfileSaveState.Success("Dados salvos com sucesso!")
             } else {
-                _updateStatus.value = "Falha ao salvar dados."
+                _saveState.value = ProfileSaveState.Error("Falha ao salvar dados.")
             }
         }
     }
 
-    private fun setEditingMode(editing: Boolean) { /* Helper se necessário */
+    fun updatePhotoImmediately(context: Context, uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _saveState.value = ProfileSaveState.Saving
+            val base64 = ImageUtils.uriToBase64(context, uri)
+
+            if (base64 != null) {
+                _draftPhotoBase64.value = base64 // Atualiza visual imediato
+
+                val currentState = _uiState.value
+                if (currentState is ProfileUiState.Content) {
+                    val updatedUser = currentState.user.copy(fotoBase64 = base64)
+                    val result = dbRepository.updateUser(updatedUser)
+
+                    if (result is DatabaseRepository.Result.Success) {
+                        _uiState.value = currentState.copy(user = updatedUser)
+                        _saveState.value = ProfileSaveState.Success("Foto atualizada!")
+                    } else {
+                        _saveState.value = ProfileSaveState.Error("Erro ao salvar foto.")
+                    }
+                }
+            } else {
+                _saveState.value = ProfileSaveState.Error("Erro ao processar imagem.")
+            }
+        }
     }
+
+    // Setters e Clears
+    fun setDraftNotificationEnabled(enabled: Boolean) { _draftNotificationEnabled.value = enabled }
+    fun setDraftTime(hour: Int, minute: Int) { _draftTime.value = Pair(hour, minute) }
+    fun clearScheduleEvent() { _scheduleNotificationEvent.value = null }
+    fun clearSaveStatus() { _saveState.value = ProfileSaveState.Idle }
+    fun clearLogoutEvent() { _logoutEvent.value = false }
 
     fun logout() {
         auth.signOut()

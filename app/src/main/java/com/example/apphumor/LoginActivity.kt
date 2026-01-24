@@ -4,11 +4,16 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.apphumor.databinding.ActivityLoginBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.viewmodel.AppViewModelFactory
+import com.example.apphumor.viewmodel.LoginUiState
 import com.example.apphumor.viewmodel.LoginViewModel
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -20,20 +25,18 @@ class LoginActivity : AppCompatActivity() {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // 1. Injeção de Dependência Manual
         val factory = AppViewModelFactory(
             DependencyProvider.auth,
             DependencyProvider.databaseRepository
         )
         viewModel = ViewModelProvider(this, factory)[LoginViewModel::class.java]
 
-        // 2. Verificar se já está logado
         if (DependencyProvider.auth.currentUser != null) {
             goToHome()
         }
 
         setupListeners()
-        setupObservers()
+        setupStateObserver() // Nova função de observação
     }
 
     private fun setupListeners() {
@@ -48,22 +51,32 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupObservers() {
-        viewModel.isLoading.observe(this) { isLoading ->
-            binding.btnLogin.isEnabled = !isLoading
-            binding.btnLogin.text = if (isLoading) "Entrando..." else getString(R.string.action_login)
-        }
-
-        viewModel.errorMessage.observe(this) { message ->
-            message?.let {
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
-                viewModel.clearErrorMessage()
-            }
-        }
-
-        viewModel.loginSuccess.observe(this) { isSuccess ->
-            if (isSuccess) {
-                goToHome()
+    private fun setupStateObserver() {
+        // Usa lifecycleScope + repeatOnLifecycle para coletar Flows de forma segura
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.uiState.collect { state ->
+                    when (state) {
+                        is LoginUiState.Idle -> {
+                            binding.btnLogin.isEnabled = true
+                            binding.btnLogin.text = getString(R.string.action_login)
+                        }
+                        is LoginUiState.Loading -> {
+                            binding.btnLogin.isEnabled = false
+                            binding.btnLogin.text = "Entrando..."
+                        }
+                        is LoginUiState.Success -> {
+                            goToHome()
+                        }
+                        is LoginUiState.Error -> {
+                            binding.btnLogin.isEnabled = true
+                            binding.btnLogin.text = getString(R.string.action_login)
+                            Toast.makeText(this@LoginActivity, state.message, Toast.LENGTH_LONG).show()
+                            // Opcional: Resetar estado após erro
+                            viewModel.resetState()
+                        }
+                    }
+                }
             }
         }
     }
