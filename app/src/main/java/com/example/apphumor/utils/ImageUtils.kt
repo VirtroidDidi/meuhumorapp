@@ -9,48 +9,43 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 object ImageUtils {
-    private const val MAX_DIMENSION = 400 // Tamanho máximo (leve)
-    private const val COMPRESSION_QUALITY = 70
 
+    // TODO: [PERFORMANCE] Otimização de Imagem
+    // Como estamos usando Base64 (MVP), a compressão aqui deve ser agressiva.
+    // Quality = 50 é um compromisso entre legibilidade e tamanho da String final.
+    // Em produção com Storage, poderíamos subir a qualidade para 80+.
     fun uriToBase64(context: Context, uri: Uri): String? {
         return try {
             val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
+            val bitmap = BitmapFactory.decodeStream(inputStream)
             inputStream?.close()
-            if (originalBitmap == null) return null
 
-            val resizedBitmap = reduceBitmap(originalBitmap)
-            bitmapToBase64(resizedBitmap)
+            if (bitmap != null) {
+                // Redimensiona se for muito grande (opcional, mas recomendado para Base64)
+                val scaledBitmap = Bitmap.createScaledBitmap(bitmap, 300, 300, true)
+
+                val outputStream = ByteArrayOutputStream()
+                // Comprime para JPEG com 50% de qualidade
+                scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 50, outputStream)
+                val byteArray = outputStream.toByteArray()
+
+                Base64.encodeToString(byteArray, Base64.DEFAULT)
+            } else {
+                null
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
         }
     }
 
-    fun base64ToBitmap(base64String: String?): Bitmap? {
-        if (base64String.isNullOrEmpty()) return null
+    fun base64ToBitmap(base64Str: String): Bitmap? {
         return try {
-            val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
+            val decodedBytes = Base64.decode(base64Str, Base64.DEFAULT)
             BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-        } catch (e: Exception) { null }
-    }
-
-    private fun bitmapToBase64(bitmap: Bitmap): String {
-        val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, COMPRESSION_QUALITY, outputStream)
-        return Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
-    }
-
-    private fun reduceBitmap(original: Bitmap): Bitmap {
-        val width = original.width
-        val height = original.height
-        if (width <= MAX_DIMENSION && height <= MAX_DIMENSION) return original
-
-        val ratio: Float = width.toFloat() / height.toFloat()
-        var newWidth = MAX_DIMENSION
-        var newHeight = MAX_DIMENSION
-        if (width > height) newHeight = (newWidth / ratio).toInt() else newWidth = (newHeight * ratio).toInt()
-
-        return Bitmap.createScaledBitmap(original, newWidth, newHeight, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 }

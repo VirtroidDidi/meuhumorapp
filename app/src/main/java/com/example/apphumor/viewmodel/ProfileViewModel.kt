@@ -174,6 +174,16 @@ class ProfileViewModel(
     fun updatePhotoImmediately(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.value = ProfileSaveState.Saving
+
+            // TODO: [DÉBITO TÉCNICO - MVP]
+            // Decisão Arquitetural: Estamos convertendo a imagem para Base64 e salvando
+            // diretamente no Realtime Database para reduzir custos e complexidade inicial (Serverless).
+            //
+            // RISCO: Strings Base64 aumentam drasticamente o payload do JSON.
+            // SOLUÇÃO FUTURA:
+            // 1. Upload da imagem para o Firebase Storage (Bucket).
+            // 2. Obter a URL pública (Download URL).
+            // 3. Salvar apenas a URL (String curta) no banco de dados.
             val base64 = ImageUtils.uriToBase64(context, uri)
 
             if (base64 != null) {
