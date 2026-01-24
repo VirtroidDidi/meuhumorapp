@@ -8,16 +8,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.models.HumorType // [NOVO] Import do Enum
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.example.apphumor.utils.ImageUtils
+import com.example.apphumor.utils.InsightAnalysis
+import com.example.apphumor.utils.InsightResult
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
-import com.example.apphumor.utils.HumorUtils
-import com.example.apphumor.utils.InsightAnalysis
-import com.example.apphumor.utils.InsightResult
 
 
 data class MoodStat(
@@ -77,23 +77,25 @@ class ProfileViewModel(
             val notes = dbRepository.getHumorNotesOnce(userId)
 
             if (notes.isNotEmpty()) {
-                // 1. O GRÁFICO (Mantém sua lógica visual limpa)
+                // 1. O GRÁFICO (Atualizado para usar HumorType)
                 val stats = notes
-                    .groupingBy { it.humor }
+                    .groupingBy {
+                        // Agrupa usando o Enum (resolve legados automaticamente)
+                        HumorType.fromKey(it.humor)
+                    }
                     .eachCount()
-                    .map { (humorName, count) ->
-                        val style = HumorUtils.getMoodStyle(humorName)
+                    .map { (type, count) ->
+                        // Agora pegamos as cores e textos direto do Enum, sem HumorUtils
                         MoodStat(
-                            labelRes = style.labelRes,
+                            labelRes = type.labelRes,
                             count = count,
-                            colorRes = style.contentColorRes
+                            colorRes = type.colorRes
                         )
                     }
                     .sortedByDescending { it.count }
                 _moodStats.value = stats
 
-                // 2. O INSIGHT INTELIGENTE (Aqui chamamos o novo arquivo)
-                // Ele vai processar o "Melhor Dia" e a "Dica" automaticamente
+                // 2. O INSIGHT INTELIGENTE
                 val smartInsight = InsightAnalysis.generateInsight(notes)
                 _insight.value = smartInsight
 

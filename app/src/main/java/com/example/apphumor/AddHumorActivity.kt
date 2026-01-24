@@ -1,10 +1,8 @@
 package com.example.apphumor
 
-import android.app.Activity
-import android.content.Context
+
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -13,14 +11,14 @@ import androidx.lifecycle.lifecycleScope
 import com.example.apphumor.databinding.ActivityAddHumorBinding
 import com.example.apphumor.di.DependencyProvider
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.models.HumorType
 import com.example.apphumor.utils.hideKeyboard
 import com.example.apphumor.viewmodel.AddHumorViewModel
 import com.example.apphumor.viewmodel.AppViewModelFactory
 import com.example.apphumor.viewmodel.SaveState
-import com.google.android.material.snackbar.Snackbar // Import do Snackbar
-import kotlinx.coroutines.launch
 import com.google.android.material.color.MaterialColors
-
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 
 class AddHumorActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHumorBinding
@@ -58,19 +56,10 @@ class AddHumorActivity : AppCompatActivity() {
 
             if (checkedIds.isNotEmpty()) {
                 val chipId = checkedIds[0]
-                selectedHumor = when (chipId) {
-                    R.id.chip_rad -> "Rad"
-                    R.id.chip_happy -> "Happy"
-                    R.id.chip_grateful -> "Grateful"
-                    R.id.chip_calm -> "Calm"
-                    R.id.chip_neutral -> "Neutral"
-                    R.id.chip_pensive -> "Pensive"
-                    R.id.chip_tired -> "Tired"
-                    R.id.chip_sad -> "Sad"
-                    R.id.chip_anxious -> "Anxious"
-                    R.id.chip_angry -> "Angry"
-                    else -> null
-                }
+
+                // Substituição do 'when' gigante pelo Enum HumorType
+                selectedHumor = HumorType.fromChipId(chipId)?.key
+
             } else {
                 selectedHumor = null
             }
@@ -79,26 +68,11 @@ class AddHumorActivity : AppCompatActivity() {
 
     private fun loadExistingNote() {
         existingNote?.let { note ->
-            val chipId = when (note.humor) {
-                "Rad" -> R.id.chip_rad
-                "Happy" -> R.id.chip_happy
-                "Grateful" -> R.id.chip_grateful
-                "Calm" -> R.id.chip_calm
-                "Neutral" -> R.id.chip_neutral
-                "Pensive" -> R.id.chip_pensive
-                "Tired" -> R.id.chip_tired
-                "Sad" -> R.id.chip_sad
-                "Anxious" -> R.id.chip_anxious
-                "Angry" -> R.id.chip_angry
-                // Legado
-                "Excellent", "Incrível" -> R.id.chip_rad
-                "Good", "Bem" -> R.id.chip_happy
-                "Energetic", "Energético" -> R.id.chip_rad
-                "Irritado" -> R.id.chip_angry
-                "Triste" -> R.id.chip_sad
-                else -> R.id.chip_neutral
-            }
-            binding.cgHumor.check(chipId)
+
+            // O Enum já trata "Incrível", "Energetic", etc, automaticamente via fromKey()
+            val type = HumorType.fromKey(note.humor)
+            binding.cgHumor.check(type.chipId)
+
             binding.etNotes.setText(note.descricao)
             binding.tvTitle.text = getString(R.string.add_humor_edit_title)
         }
@@ -159,14 +133,13 @@ class AddHumorActivity : AppCompatActivity() {
                             getString(R.string.msg_record_saved)
 
                         // Se estiver offline, usamos uma mensagem especial
-                        // O Toast é melhor aqui porque a Activity vai fechar logo em seguida
                         if (isOffline) {
                             Toast.makeText(this@AddHumorActivity, getString(R.string.msg_saved_offline, baseMsg), Toast.LENGTH_LONG).show()
                         } else {
                             Toast.makeText(this@AddHumorActivity, baseMsg, Toast.LENGTH_SHORT).show()
                         }
 
-                        setResult(Activity.RESULT_OK)
+                        setResult(RESULT_OK)
                         finish()
                         viewModel.resetSaveStatus()
                     }
@@ -180,22 +153,20 @@ class AddHumorActivity : AppCompatActivity() {
         }
     }
 
-    // Função auxiliar para mostrar Snackbar com estilo
     // Função auxiliar para mostrar Snackbar com estilo e cores do tema
     private fun showSnackbar(message: String, isError: Boolean = false) {
         val snackbar = Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
 
         if (isError) {
             // Busca as cores semânticas de ERRO do tema atual
-            val colorError = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorError)
+            // Usamos o pacote completo para garantir que não haja confusão com R local
+                val colorError = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorError)
             val colorOnError = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorOnError)
 
             snackbar.setBackgroundTint(colorError)
             snackbar.setTextColor(colorOnError)
         } else {
             // Busca as cores semânticas de SUCESSO/SECUNDÁRIA do tema atual
-            // Usamos 'colorSecondary' para substituir o antigo 'secondary_color'
-            // Dica: Se quiser mais destaque, troque 'colorSecondary' por 'colorPrimary'
             val colorBackground = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorSecondary)
             val colorText = MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorOnSecondary)
 
@@ -206,19 +177,13 @@ class AddHumorActivity : AppCompatActivity() {
     }
 
     private fun isInternetAvailable(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.activeNetworkInfo
-            return networkInfo != null && networkInfo.isConnected
+        val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return when {
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+            else -> false
         }
     }
 }

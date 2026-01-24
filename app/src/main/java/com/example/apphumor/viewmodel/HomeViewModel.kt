@@ -291,8 +291,14 @@ class HomeViewModel(
         // Filtro por Humor
         if (state.selectedHumors.isNotEmpty()) {
             result = result.filter { note ->
-                val noteHumor = note.humor ?: ""
-                state.selectedHumors.any { selected -> selected.equals(noteHumor, ignoreCase = true) }
+                // Converte a nota do banco para Enum (ex: "Incrível" -> RAD)
+                val noteType = com.example.apphumor.models.HumorType.fromKey(note.humor)
+
+                // Verifica se o Enum está na lista de filtros (que já salva Enums como Strings)
+                state.selectedHumors.any { selectedKey ->
+                    val selectedType = com.example.apphumor.models.HumorType.fromKey(selectedKey)
+                    selectedType == noteType
+                }
             }
         }
 

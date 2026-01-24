@@ -16,7 +16,7 @@ import coil.request.repeatCount
 import com.example.apphumor.R
 import com.example.apphumor.databinding.ItemNoteBinding
 import com.example.apphumor.models.HumorNote
-import com.example.apphumor.utils.HumorUtils
+import com.example.apphumor.models.HumorType // [NOVO] Usamos o Enum agora
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,7 +32,6 @@ class HumorNoteAdapter(
     // Função chamada pelo Fragment para definir quem vai brilhar
     fun triggerAnimation(noteId: String) {
         animateTargetId = noteId
-        // Atualiza a lista para aplicar a mudança visual
         notifyDataSetChanged()
     }
 
@@ -41,7 +40,10 @@ class HumorNoteAdapter(
 
         fun bind(note: HumorNote) {
             val context = binding.root.context
-            val moodStyle = HumorUtils.getMoodStyle(note.humor)
+
+            // [REFATORAÇÃO] Recupera tudo do Enum (Ícone, Texto, Animação)
+            // Resolve legados automaticamente (ex: "Incrível" vira RAD)
+            val type = HumorType.fromKey(note.humor)
 
             with(binding) {
                 // --- LÓGICA VISUAL PRINCIPAL ---
@@ -49,11 +51,9 @@ class HumorNoteAdapter(
                 // Verifica: Esta é a nota que acabou de ser criada/editada?
                 if (note.id == animateTargetId) {
                     // [MODO ANIMAÇÃO]
-                    // 1. Limpa qualquer filtro de cor para o GIF aparecer bonito
                     ivHumorIcon.clearColorFilter()
                     ImageViewCompat.setImageTintList(ivHumorIcon, null)
 
-                    // 2. Prepara o Loader de GIF
                     val imageLoader = ImageLoader.Builder(context)
                         .components {
                             if (SDK_INT >= 28) {
@@ -64,33 +64,28 @@ class HumorNoteAdapter(
                         }
                         .build()
 
-                    // 3. Carrega o GIF Animado
-                    val animRes = getMoodAnimResource(note.humor ?: "NEUTRAL")
-                    ivHumorIcon.load(animRes, imageLoader) {
+                    // Usa o recurso de animação direto do Enum
+                    ivHumorIcon.load(type.animRes, imageLoader) {
                         crossfade(true)
-                        repeatCount(0) // Toca 1 vez + 1 repetição (2 ciclos) e para
-
+                        repeatCount(0) // Toca 1 vez + 0 repetições
                         // Se o GIF falhar, coloca o estático como segurança
-                        error(moodStyle.iconRes)
+                        error(type.iconRes)
                     }
-
-                    // IMPORTANTE: Não limpamos o animateTargetId aqui.
-                    // Deixamos ele ativo para garantir que a animação não seja cortada
-                    // se a lista atualizar sozinha.
 
                 } else {
                     // [MODO ESTÁTICO PADRÃO]
-                    // Carrega a imagem estática (SVG/PNG) imediatamente
-                    ivHumorIcon.load(moodStyle.iconRes) {
-                        // Garante que não use o decoder de GIF aqui para economizar memória
+                    ivHumorIcon.load(type.iconRes) {
+                        // Garante que não use o decoder de GIF aqui
                     }
                     ivHumorIcon.clearColorFilter()
                     ImageViewCompat.setImageTintList(ivHumorIcon, null)
                 }
 
-                // --- Restante dos dados (Texto, Data, etc) ---
+                // --- Restante dos dados ---
                 btnEdit.visibility = if (showEditButton) View.VISIBLE else View.GONE
-                tvHumor.text = context.getString(moodStyle.labelRes)
+
+                // Texto traduzido vindo do Enum
+                tvHumor.text = context.getString(type.labelRes)
 
                 tvDescricao.text = note.descricao.takeIf { !it.isNullOrEmpty() } ?: "Sem descrição"
                 tvDescricao.visibility = if (note.descricao.isNullOrEmpty()) View.GONE else View.VISIBLE
@@ -107,9 +102,8 @@ class HumorNoteAdapter(
                     tvData.text = ""
                 }
 
-                // Configuração do clique manual (Sempre permite animar ao clicar)
+                // Configuração do clique manual
                 ivHumorIcon.setOnClickListener {
-                    // Ao clicar, forçamos a animação pontual deste item
                     triggerAnimation(note.id ?: "")
                 }
 
@@ -129,22 +123,6 @@ class HumorNoteAdapter(
                 } else {
                     ivSyncStatus.visibility = View.GONE
                 }
-            }
-        }
-
-        private fun getMoodAnimResource(mood: String): Int {
-            return when (mood.uppercase()) {
-                "RAD" -> R.drawable.ic_mood_rad_anim
-                "HAPPY" -> R.drawable.ic_mood_happy_anim
-                "GRATEFUL" -> R.drawable.ic_mood_grateful_anim
-                "CALM" -> R.drawable.ic_mood_calm_anim
-                "NEUTRAL" -> R.drawable.ic_mood_neutral_anim
-                "PENSIVE" -> R.drawable.ic_mood_pensive_anim
-                "ANXIOUS" -> R.drawable.ic_mood_anxious_anim
-                "SAD" -> R.drawable.ic_mood_sad_anim
-                "ANGRY" -> R.drawable.ic_mood_angry_anim
-                "TIRED" -> R.drawable.ic_mood_tired_anim
-                else -> R.drawable.ic_mood_neutral_anim
             }
         }
     }

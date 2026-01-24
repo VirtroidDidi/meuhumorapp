@@ -5,7 +5,6 @@ import com.example.apphumor.R
 import com.example.apphumor.models.HumorNote
 import com.example.apphumor.models.Insight
 import com.example.apphumor.repository.DatabaseRepository
-import com.example.apphumor.utils.HumorUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onEach
@@ -78,52 +77,47 @@ class InsightsViewModel(
             return listOf(createEmptyInsight("Nenhum registro no período."))
         }
 
+        // ... (Lógica de datas mantém igual) ...
         val calendar = Calendar.getInstance()
         val endTime = calendar.timeInMillis
-
         val startTime = when (range) {
             TimeRange.LAST_7_DAYS -> {
-                val c = Calendar.getInstance()
-                c.add(Calendar.DAY_OF_YEAR, -7)
-                c.timeInMillis
+                val c = Calendar.getInstance(); c.add(Calendar.DAY_OF_YEAR, -7); c.timeInMillis
             }
             TimeRange.LAST_30_DAYS -> {
-                val c = Calendar.getInstance()
-                c.add(Calendar.DAY_OF_YEAR, -30)
-                c.timeInMillis
+                val c = Calendar.getInstance(); c.add(Calendar.DAY_OF_YEAR, -30); c.timeInMillis
             }
             TimeRange.CURRENT_MONTH -> {
                 val c = Calendar.getInstance()
-                c.set(Calendar.DAY_OF_MONTH, 1)
-                c.set(Calendar.HOUR_OF_DAY, 0)
-                c.set(Calendar.MINUTE, 0)
-                c.set(Calendar.SECOND, 0)
-                c.timeInMillis
+                c.set(Calendar.DAY_OF_MONTH, 1); c.set(Calendar.HOUR_OF_DAY, 0)
+                c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.timeInMillis
             }
         }
 
         val filteredNotes = notes.filter { it.timestamp in startTime..endTime }
-
         if (filteredNotes.isEmpty()) return listOf(createEmptyInsight("Nenhum registro no período."))
 
         val totalNotes = filteredNotes.size
 
+        // [MUDANÇA AQUI] Usa HumorType para contagem
         val humorCounts = filteredNotes
-            .filter { it.humor != null }
-            .groupingBy { it.humor!!.lowercase(Locale.ROOT) }
+            .groupingBy { com.example.apphumor.models.HumorType.fromKey(it.humor) }
             .eachCount()
 
         val mostCommonEntry = humorCounts.maxByOrNull { it.value }
-        val mostCommonHumorRaw = mostCommonEntry?.key?.replaceFirstChar { it.titlecase() } ?: "Neutro"
-        val moodStyle = HumorUtils.getMoodStyle(mostCommonHumorRaw)
+        val dominantType = mostCommonEntry?.key ?: com.example.apphumor.models.HumorType.NEUTRAL
+
+        // Pega string bruta apenas para exibição, se preferir o label traduzido, teria que ter contexto
+        // Aqui usaremos o valor da Key do Enum (ex: "Rad", "Happy")
+        val mostCommonHumorText = dominantType.key
         val bestDay = calculateBestDay(filteredNotes)
 
         return listOf(
             Insight(
                 rotulo = "Humor Predominante",
-                valor = mostCommonHumorRaw,
-                iconResId = moodStyle.iconRes,
-                backgroundColorResId = moodStyle.backgroundColorRes
+                valor = mostCommonHumorText,
+                iconResId = dominantType.iconRes, // Do Enum
+                backgroundColorResId = dominantType.backgroundTint // Do Enum
             ),
             Insight(
                 rotulo = "Total de Registros",

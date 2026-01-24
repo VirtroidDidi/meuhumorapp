@@ -2,6 +2,7 @@ package com.example.apphumor.utils
 
 import com.example.apphumor.R
 import com.example.apphumor.models.HumorNote
+import com.example.apphumor.models.HumorType // [NOVO]
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,67 +32,70 @@ object InsightAnalysis {
         val recentNotes = notes.filter { it.timestamp >= trintaDiasAtras }
         val notesToAnalyze = if (recentNotes.isNotEmpty()) recentNotes else notes
 
-        // 2. Estatística
+        // 2. Estatística (Usando Enum para agrupar corretamente Legados e Atuais)
         val total = notesToAnalyze.size
-        val grouped = notesToAnalyze.groupingBy { it.humor ?: "Neutro" }.eachCount()
+
+        // Agrupa pelo Enum HumorType, não mais pela String bruta
+        val grouped = notesToAnalyze.groupingBy { HumorType.fromKey(it.humor) }.eachCount()
 
         val dominantEntry = grouped.maxByOrNull { it.value }
-        val dominantMoodRaw = dominantEntry?.key ?: "Neutro"
+        val dominantType = dominantEntry?.key ?: HumorType.NEUTRAL
         val count = dominantEntry?.value ?: 0
         val percentage = (count * 100) / total
 
-        // Traduz para usar na frase
-        val moodNamePT = translateMoodName(dominantMoodRaw)
+        // Traduz para usar na frase (Pega do resources do Enum)
+        // Precisamos de Contexto para getString, mas como aqui é Object,
+        // vamos usar nomes genéricos ou passar contexto.
+        // Para simplificar, manteremos a lógica de texto aqui baseada no ENUM.
+        val moodNamePT = getMoodNamePT(dominantType)
 
         // 3. Melhor Dia
         val bestDay = calculateBestDay(notesToAnalyze)
         val bestDayText = if (bestDay != "N/A") "\n\n📅 Curiosidade: $bestDay costuma ser seu melhor dia!" else ""
 
-        // 4. LÓGICA DE MENSAGENS (AGORA SEPARADA)
-        return when (dominantMoodRaw) {
+        // 4. LÓGICA DE MENSAGENS (Baseada no Enum)
+        return when (dominantType) {
             // --- POSITIVOS ---
-            "Rad", "Happy", "Feliz", "Incrível", "Bem", "Energético", "Grateful", "Grato", "Excellent", "Excelente" -> {
+            HumorType.RAD, HumorType.HAPPY, HumorType.GRATEFUL, HumorType.CALM -> {
                 InsightResult(
                     title = "Onda Positiva! 🌟",
                     message = "Você está brilhando! $percentage% dos seus registros recentes são sobre '$moodNamePT'. Aproveite essa energia para criar.$bestDayText",
-                    iconRes = R.drawable.ic_mood_rad,
-                    colorRes = R.color.mood_rad,
-                    backgroundTint = R.color.insight_rad_bg
+                    iconRes = dominantType.iconRes,
+                    colorRes = dominantType.colorRes,
+                    backgroundTint = dominantType.backgroundTint
                 )
             }
 
             // --- TRISTEZA / BAIXA ENERGIA ---
-            "Sad", "Triste", "Tired", "Cansado", "Chateado", "Pensive", "Pensativo" -> {
+            HumorType.SAD, HumorType.TIRED, HumorType.PENSIVE -> {
                 InsightResult(
                     title = "Acolhimento 💙",
                     message = "Notamos que '$moodNamePT' apareceu em $percentage% das vezes. Respeite seu tempo. Um chá ou banho quente podem ajudar.$bestDayText",
-                    iconRes = R.drawable.ic_mood_sad,
-                    colorRes = R.color.mood_sad,
-                    backgroundTint = R.color.insight_sad_bg
+                    iconRes = dominantType.iconRes,
+                    colorRes = dominantType.colorRes,
+                    backgroundTint = dominantType.backgroundTint
                 )
             }
 
-            // --- ANSIEDADE (Tensão) ---
-            "Anxious", "Ansioso" -> {
+            // --- ANSIEDADE ---
+            HumorType.ANXIOUS -> {
                 InsightResult(
                     title = "Respire Fundo 🍃",
-                    // Ajustei o texto para fazer sentido com "Ansiedade"
                     message = "A ansiedade esteve presente em $percentage% dos registros. Tente a técnica 4-7-8 agora: inspire 4s, segure 7s, solte 8s.$bestDayText",
-                    iconRes = R.drawable.ic_mood_anxious,
-                    colorRes = R.color.mood_anxious,
-                    backgroundTint = R.color.insight_anxious_bg
+                    iconRes = dominantType.iconRes,
+                    colorRes = dominantType.colorRes,
+                    backgroundTint = dominantType.backgroundTint
                 )
             }
 
-            // --- RAIVA (Irritação) - BLOCO NOVO ---
-            "Angry", "Irritado", "Raiva" -> {
+            // --- RAIVA ---
+            HumorType.ANGRY -> {
                 InsightResult(
                     title = "Pausa Necessária 🛑",
-                    // Texto específico para Raiva
                     message = "Sentir raiva ou irritação é um sinal de limites. Tente se afastar do problema por 5 minutos e beber um copo d'água.$bestDayText",
-                    iconRes = R.drawable.ic_mood_angry,
-                    colorRes = R.color.mood_angry,
-                    backgroundTint = R.color.insight_angry_bg
+                    iconRes = dominantType.iconRes,
+                    colorRes = dominantType.colorRes,
+                    backgroundTint = dominantType.backgroundTint
                 )
             }
 
@@ -100,37 +104,37 @@ object InsightAnalysis {
                 InsightResult(
                     title = "Equilíbrio ⚖️",
                     message = "Seus dias estão estáveis. É um ótimo momento para planejar os próximos passos sem pressão.$bestDayText",
-                    iconRes = R.drawable.ic_mood_neutral,
-                    colorRes = R.color.mood_neutral,
-                    backgroundTint = R.color.insight_neutral_bg
+                    iconRes = dominantType.iconRes,
+                    colorRes = dominantType.colorRes,
+                    backgroundTint = dominantType.backgroundTint
                 )
             }
         }
     }
 
-    private fun translateMoodName(englishName: String): String {
-        return when (englishName) {
-            "Angry", "Irritado" -> "Raiva"
-            "Anxious", "Ansioso" -> "Ansiedade"
-            "Sad", "Triste" -> "Tristeza"
-            "Tired", "Cansado" -> "Cansaço"
-            "Happy", "Feliz", "Bem", "Good" -> "Felicidade"
-            "Rad", "Incrível", "Excellent", "Energetic" -> "Empolgação"
-            "Grateful", "Grato" -> "Gratidão"
-            "Calm", "Calmo" -> "Calma"
-            "Pensive", "Pensativo" -> "Reflexão"
+    private fun getMoodNamePT(type: HumorType): String {
+        return when (type) {
+            HumorType.ANGRY -> "Raiva"
+            HumorType.ANXIOUS -> "Ansiedade"
+            HumorType.SAD -> "Tristeza"
+            HumorType.TIRED -> "Cansaço"
+            HumorType.HAPPY -> "Felicidade"
+            HumorType.RAD -> "Empolgação"
+            HumorType.GRATEFUL -> "Gratidão"
+            HumorType.CALM -> "Calma"
+            HumorType.PENSIVE -> "Reflexão"
             else -> "Neutro"
         }
     }
 
     private fun calculateBestDay(notes: List<HumorNote>): String {
-        val positiveHumors = listOf(
-            "rad", "happy", "grateful", "calm", "excellent", "good",
-            "energetic", "feliz", "bem", "calmo", "grato", "incrível", "excelente"
+        // Define quais tipos contam como "Bons"
+        val positiveTypes = listOf(
+            HumorType.RAD, HumorType.HAPPY, HumorType.GRATEFUL, HumorType.CALM
         )
 
         val dayCounts = notes
-            .filter { (it.humor?.lowercase() ?: "") in positiveHumors }
+            .filter { HumorType.fromKey(it.humor) in positiveTypes }
             .groupingBy {
                 val c = Calendar.getInstance()
                 c.timeInMillis = it.timestamp
