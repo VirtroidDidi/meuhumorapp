@@ -1,105 +1,108 @@
-// ARQUIVO: app/src/main/java/com/example/apphumor/viewmodel/CadastroViewModel.kt
-
 package com.example.apphumor.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider // NOVO: Para a Factory
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.apphumor.models.User
 import com.example.apphumor.repository.DatabaseRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * [CadastroViewModel]
- * * AGORA RECEBE DEPENDÊNCIAS VIA CONSTRUTOR.
- */
+// Estado da UI para Cadastro
+sealed class CadastroUiState {
+    object Idle : CadastroUiState()
+    object Loading : CadastroUiState()
+    object Success : CadastroUiState()
+    data class Error(val message: String) : CadastroUiState()
+}
+
 class CadastroViewModel(
-    private val auth: FirebaseAuth, // Recebido no construtor
-    private val dbRepository: DatabaseRepository // Recebido no construtor
+    private val auth: FirebaseAuth,
+    private val dbRepository: DatabaseRepository
 ) : ViewModel() {
 
-    // REMOVIDAS: Inicializações internas de auth e dbRepository
     private val TAG = "CadastroViewModel"
 
-    private val _cadastroSuccess = MutableLiveData<Boolean>()
-    val cadastroSuccess: LiveData<Boolean> = _cadastroSuccess
+    private val _uiState = MutableStateFlow<CadastroUiState>(CadastroUiState.Idle)
+    val uiState: StateFlow<CadastroUiState> = _uiState.asStateFlow()
 
-    private val _errorMessage = MutableLiveData<String?>()
-    val errorMessage: LiveData<String?> = _errorMessage
+    // Função única que recebe tudo e decide o que fazer
+    fun registerUser(nome: String, email: String, senha: String, confirmarSenha: String, idade: Int) {
 
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
-
-    fun registerUser(nome: String, email: String, senha: String, idade: Int) {
-        _isLoading.value = true
-
-        if (nome.isBlank() || email.isBlank() || senha.isBlank() || senha.length < 6) {
-            _errorMessage.value = "Dados inválidos. Verifique todos os campos."
-            _isLoading.value = false
+        // 1. CAMADA DE VALIDAÇÃO (Regras de Negócio)
+        if (nome.isBlank() || email.isBlank() || senha.isBlank() || confirmarSenha.isBlank()) {
+            _uiState.value = CadastroUiState.Error("Preencha todos os campos.")
             return
         }
 
+        if (senha != confirmarSenha) {
+            _uiState.value = CadastroUiState.Error("As senhas não conferem.")
+            return
+        }
+
+        if (senha.length < 6) {
+            _uiState.value = CadastroUiState.Error("A senha deve ter pelo menos 6 caracteres.")
+            return
+        }
+
+        // 2. CAMADA DE EXECUÇÃO
+        _uiState.value = CadastroUiState.Loading
+
         viewModelScope.launch {
             try {
+                // Tenta criar usuário no Auth
                 val authResult = auth.createUserWithEmailAndPassword(email, senha).await()
                 val firebaseUser = authResult.user
 
                 if (firebaseUser?.uid != null) {
                     val user = User(firebaseUser.uid, nome, email, idade)
 
-                    // Chama a nova função suspend do repositório
+                    // Salva dados adicionais no Database
                     val saveResult = dbRepository.saveUser(user)
 
-                    _isLoading.value = false
-
                     if (saveResult is DatabaseRepository.Result.Success) {
-                        _cadastroSuccess.value = true
+                        _uiState.value = CadastroUiState.Success
                     } else {
-                        // Loga o usuário fora se a criação do perfil falhar
+                        // Rollback manual (opcional): Se falhar no banco, desloga o auth
                         auth.signOut()
-                        _errorMessage.value = "Conta criada, mas falha ao salvar perfil. Tente logar novamente."
+                        _uiState.value = CadastroUiState.Error("Conta criada, mas falha ao salvar perfil.")
                     }
                 } else {
-                    _isLoading.value = false
-                    _errorMessage.value = "Erro interno: UID não gerado."
+                    _uiState.value = CadastroUiState.Error("Erro interno: UID não gerado.")
                 }
 
             } catch (e: Exception) {
-                _isLoading.value = false
-                when (e) {
-                    is FirebaseAuthWeakPasswordException ->
-                        _errorMessage.value = "A senha é muito fraca."
-                    is FirebaseAuthInvalidCredentialsException ->
-                        _errorMessage.value = "E-mail inválido ou já em uso."
+                val errorMsg = when (e) {
+                    is FirebaseAuthWeakPasswordException -> "A senha é muito fraca."
+                    is FirebaseAuthInvalidCredentialsException -> "E-mail inválido."
+                    is FirebaseAuthUserCollisionException -> "Este e-mail já está cadastrado."
                     else -> {
                         Log.e(TAG, "Erro no cadastro", e)
-                        _errorMessage.value = "Falha no cadastro: ${e.message}"
+                        "Falha no cadastro: ${e.localizedMessage}"
                     }
                 }
+                _uiState.value = CadastroUiState.Error(errorMsg)
             }
         }
     }
 
-    fun clearErrorMessage() {
-        _errorMessage.value = null
+    fun resetState() {
+        _uiState.value = CadastroUiState.Idle
     }
 }
 
-/**
- * Factory personalizada para instanciar CadastroViewModel com as dependências necessárias.
- */
 class CadastroViewModelFactory(
     private val auth: FirebaseAuth,
     private val dbRepository: DatabaseRepository
 ) : ViewModelProvider.Factory {
-
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CadastroViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
